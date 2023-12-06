@@ -1,0 +1,29 @@
+<!-- FILEPATH: /home/hello-robot/catkin_ws/src/rerail_stretchit_task_execution/launch/demo.launch -->
+
+<launch>
+  <arg name="map_yaml"  default="/home/hello-robot/stretch_user/maps/demo_map.yaml"/>
+  <!-- Launch the stretch driver launch file -->
+  <include file="$(find stretch_navigation)/launch/navigation.launch" >
+    <arg name="map_yaml"      value="$(arg map_yaml)"/>
+  </include>
+
+  <!-- Launch the camera launch file -->
+  <include file="$(find stretch_core)/launch/d435i_high_resolution.launch" />
+
+  <!-- Launch the segmentation launch file -->
+  <include file="$(find stretch_fetch_grasp_bridge)/launch/segmentation_modular.launch" />
+
+  <!-- Launch the grasp launch file -->
+  <include file="$(find stretch_fetch_grasp_bridge)/launch/grasp_modular.launch" />
+
+  <!-- Launch the task_executor launch file -->
+  <include file="$(find task_executor)/launch/task_executor.launch" />
+
+  <!-- Launch the task_monitor launch file -->
+  <include file="$(find task_monitor)/launch/monitor.launch" />
+
+  <!-- Launch the task_monitor launch file -->
+  <include file="$(find rerail_stretchit_manipulation)/launch/manipulation.launch" />
+
+
+</launch>

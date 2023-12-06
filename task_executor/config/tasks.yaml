@@ -1,0 +1,163 @@
+tasks:
+  waypoint_navigation:
+    steps:
+    - action: move
+      params:
+        location: waypoints.navigation_goal
+
+  reposition_recovery_task:
+    params:
+    - origin_move_location
+    - move_location
+
+    steps:
+    - action: reposition
+      params:
+        location: params.origin_move_location
+
+    - action: reposition
+      params:
+        location: params.move_location
+
+  demo_task:
+    steps:
+    - action: switch_mode
+      params:
+        mode: "navigation"
+    - action: move
+      params:
+        location: waypoints.pick_point
+    - action: switch_mode
+      params:
+        mode: "position"
+    - action: reposition_cam
+      params:
+        pose: "grasp_pose"
+    - action: segmentation
+      params:
+        object: "can"
+      var:
+        - segmented_object
+    - action: grasp
+      params:
+        segmented_object: var.segmented_object
+      var:
+        - grasp
+    - action: pick
+      params:
+        grasp: var.grasp
+    - action: switch_mode
+      params:
+        mode: "navigation"
+    - action: move
+      params:
+        location: waypoints.drop_point
+    - action: place
+      params:
+        height: "placeholder"
+    
+
+
+  demo_task_full:
+    steps:
+    - action: switch_mode
+      params:
+        mode: "navigation"
+    - action: move
+      params:
+        location: waypoints.navigation_goal
+    - action: switch_mode
+      params:
+        mode: "postion"
+    - action: segmentation
+      params:
+        object: "can"
+      var:
+        - segmented_object
+    - action: grasp
+      params:
+        object: var.segmented_object
+      var:
+        - grasp
+    - action: pick
+      params:
+        grasp: var.grasp
+
+  test_task:
+    steps:
+    - action: switch_mode
+      params:
+        mode: "navigation"
+    - action: move
+      params:
+        location: waypoints.drop_point
+        # location: waypoints.pick_point
+    - action: move
+      params:
+        location: waypoints.drop_point
+    - action: switch_mode
+      params:
+        mode: "position"
+    - action: reposition_cam
+      params:
+        pose: "grasp_pose"
+    - action: segmentation
+      params:
+        object: "bowl"
+      var:
+        - segmented_object
+    - action: grasp
+      params:
+        segmented_object: var.segmented_object
+      var:
+        - grasp
+    - action: pick
+      params:
+        grasp: var.grasp
+
+  manipulation_test:
+    steps:
+    - action: switch_mode
+      params:
+        mode: "navigation"
+    - action: move
+      params:
+        location: waypoints.pick_point
+    - action: switch_mode
+      params:
+        mode: "position"
+    - action: reposition_cam
+      params:
+        pose: "grasp_pose"
+    - action: segmentation
+      params:
+        object: "can"
+      var:
+        - segmented_object
+    - action: grasp
+      params:
+        segmented_object: var.segmented_object
+      var:
+        - grasp
+    - action: pick
+      params:
+        grasp: var.grasp
+    - action: switch_mode
+      params:
+        mode: "navigation"
+    - action: move
+      params:
+        location: waypoints.drop_point
+    - action: switch_mode
+      params:
+        mode: "position"
+    - action: place
+      params:
+        height: "placeholder"
+    - action: switch_mode
+      params:
+        mode: "navigation"
+    - action: move
+      params:
+        location: waypoints.origin_for_pick_point
+    
