@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>task_executor.abstract_step &mdash; task_execution 0.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=c1dcd045"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            task_execution
+          </a>
+              <div class="version">
+                0.0.2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../task_executor.html">task_executor package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../task_monitor.html">task_monitor package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">task_execution</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">task_executor.abstract_step</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for task_executor.abstract_step</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># The abstract base class that defines an executable step in the task execution</span>
+<span class="c1"># process</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">abc</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="kn">import</span> <span class="nn">rospy</span>
+<span class="kn">import</span> <span class="nn">base64</span>
+
+<span class="kn">from</span> <span class="nn">actionlib_msgs.msg</span> <span class="kn">import</span> <span class="n">GoalStatus</span>
+<span class="kn">from</span> <span class="nn">task_execution_msgs.msg</span> <span class="kn">import</span> <span class="p">(</span><span class="n">ExecutionEvent</span><span class="p">,</span> <span class="n">TaskStepMetadata</span><span class="p">,</span>
+                                     <span class="n">MonitorMetadata</span><span class="p">,</span> <span class="n">BeliefMetadata</span><span class="p">,</span>
+                                     <span class="n">BeliefKeys</span><span class="p">)</span>
+
+
+<span class="c1"># The class definition</span>
+
+<div class="viewcode-block" id="AbstractStep"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep">[docs]</a><span class="k">class</span> <span class="nc">AbstractStep</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    All ``task`` and ``action`` steps in a task are derived from this class. The</span>
+<span class="sd">    child classes must override the following functions:</span>
+
+<span class="sd">    - :meth:`init` - called when connections to the ROS system should be setup</span>
+<span class="sd">    - :meth:`run` - a generator method that returns the current state of the \</span>
+<span class="sd">        step. As a generator, this method must use ``yield`` and not ``return``</span>
+<span class="sd">    - :meth:`stop` - called when the step must stop executing. Can (and \</span>
+<span class="sd">        should) be used to influence the behaviour in :meth:`run`</span>
+
+<span class="sd">    An object of this class is callable, and as a result there are two methods</span>
+<span class="sd">    of invoking the action or task codified by this class.</span>
+
+<span class="sd">    Option 1 (recommended)</span>
+
+<span class="sd">        The preferred method using the generator allows for stopping or preempting</span>
+<span class="sd">        the step that might be executing:</span>
+
+<span class="sd">        &gt;&gt;&gt; params = { &quot;arg1&quot;: 1, &quot;arg2&quot;: 2 }</span>
+<span class="sd">        &gt;&gt;&gt; for variables in step.run(**params):</span>
+<span class="sd">        ...     # Check conditions to stop the run; then stop</span>
+<span class="sd">        ...     if some_condition(variables):</span>
+<span class="sd">        ...         step.stop()</span>
+
+<span class="sd">    Option 2</span>
+
+<span class="sd">        The alternate method blocks execution until the step returns either a</span>
+<span class="sd">        success or failure. Although this method is not recommended, it is a</span>
+<span class="sd">        more terse representation:</span>
+
+<span class="sd">        &gt;&gt;&gt; params = { &quot;arg1&quot;: 1, &quot;arg2&quot;: 2 }</span>
+<span class="sd">        &gt;&gt;&gt; status, variables = step(**params)</span>
+
+
+<span class="sd">    When invoking invoking an instance of this class, it is your responsibility</span>
+<span class="sd">    to ensure that all required keyword arguments to :meth:`run` are specified.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span>
+
+    <span class="c1"># Definition of GoalStatus codes that indicate &quot;in progress&quot;</span>
+    <span class="n">RUNNING_GOAL_STATES</span> <span class="o">=</span> <span class="p">[</span><span class="n">GoalStatus</span><span class="o">.</span><span class="n">PENDING</span><span class="p">,</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">ACTIVE</span><span class="p">,</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">RECALLING</span><span class="p">,</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">PREEMPTING</span><span class="p">]</span>
+
+    <span class="c1"># The execution trace topic</span>
+    <span class="n">EXECUTION_TRACE_TOPIC</span> <span class="o">=</span> <span class="s1">&#39;/execution_monitor/trace&#39;</span>
+
+    <span class="c1"># The set of action, topic, service related events we might care about</span>
+    <span class="n">ACTION_SEND_GOAL_EVENT</span> <span class="o">=</span> <span class="s1">&#39;task_action_send_goal&#39;</span>
+    <span class="n">ACTION_RECV_RESULT_EVENT</span> <span class="o">=</span> <span class="s1">&#39;task_action_recv_result&#39;</span>
+    <span class="n">ACTION_CANCEL_EVENT</span> <span class="o">=</span> <span class="s1">&#39;task_action_cancel&#39;</span>
+    <span class="n">SERVICE_CALLED_EVENT</span> <span class="o">=</span> <span class="s1">&#39;task_service_called&#39;</span>
+    <span class="n">TOPIC_PUBLISHED_EVENT</span> <span class="o">=</span> <span class="s1">&#39;task_topic_published&#39;</span>
+    <span class="n">TOPIC_MESSAGE_EVENT</span> <span class="o">=</span> <span class="s1">&#39;task_topic_message&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Set the attributes that all steps have</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uuid</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_status</span> <span class="o">=</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">LOST</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_aborts</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># Helpers for updating the trace</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trace</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Publisher</span><span class="p">(</span><span class="n">AbstractStep</span><span class="o">.</span><span class="n">EXECUTION_TRACE_TOPIC</span><span class="p">,</span> <span class="n">ExecutionEvent</span><span class="p">,</span> <span class="n">queue_size</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_event</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># tuple of (event, context,); suppress duplicates</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{x.name}</span><span class="s2"> (</span><span class="si">{x.status}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_update_task_trace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="c1"># Check to see if this is a trivial update. If so, ignore</span>
+        <span class="c1"># if (self._last_event is not None</span>
+        <span class="c1">#         and self._last_event[0].task_step_metadata.status == self.status</span>
+        <span class="c1">#         and self._last_event[1] == context):</span>
+        <span class="c1">#     return</span>
+
+        <span class="c1"># Publish the event</span>
+        <span class="c1"># event = ExecutionEvent(</span>
+        <span class="c1">#     stamp=rospy.Time.now(),</span>
+        <span class="c1">#     name=self.name,</span>
+        <span class="c1">#     type=ExecutionEvent.TASK_STEP_EVENT,</span>
+        <span class="c1">#     task_step_metadata=TaskStepMetadata(</span>
+        <span class="c1">#         uuid=self.uuid,</span>
+        <span class="c1">#         status=self.status,</span>
+        <span class="c1">#         context=pickle.dumps(context)</span>
+        <span class="c1">#     )</span>
+        <span class="c1"># )</span>
+        <span class="c1"># self._trace.publish(event)</span>
+        <span class="c1"># self._last_event = (event, context,)</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">logdebug</span><span class="p">(</span><span class="s2">&quot;Not publishing to the execution trace&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_update_monitor_trace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_subtype</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">topics</span><span class="o">=</span><span class="p">[],</span> <span class="n">services</span><span class="o">=</span><span class="p">[],</span> <span class="n">actions</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="c1"># Context must be a dictionary</span>
+        <span class="c1"># context[&#39;step_name&#39;] = self.name</span>
+        <span class="c1"># context[&#39;step_uuid&#39;] = self.uuid</span>
+
+        <span class="c1"># We always publish a monitoring event, because these are manually</span>
+        <span class="c1"># triggered event notifications in the code</span>
+        <span class="c1"># event = ExecutionEvent(</span>
+        <span class="c1">#     stamp=rospy.Time.now(),</span>
+        <span class="c1">#     name=event_subtype,  # ACTION_SEND_GOAL_EVENT, ACTION_RECV_RESULT_EVENT, etc.</span>
+        <span class="c1">#     type=ExecutionEvent.MONITOR_EVENT,</span>
+        <span class="c1">#     monitor_metadata=MonitorMetadata(</span>
+        <span class="c1">#         fault_status=MonitorMetadata.NOMINAL,  # We never try to detect faults here</span>
+        <span class="c1">#         context=pickle.dumps(context),</span>
+        <span class="c1">#         topics=topics,</span>
+        <span class="c1">#         services=services,</span>
+        <span class="c1">#         actions=actions</span>
+        <span class="c1">#     )</span>
+        <span class="c1"># )</span>
+        <span class="c1"># self._trace.publish(event)</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">logdebug</span><span class="p">(</span><span class="s2">&quot;Not publishing to the monitor trace&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AbstractStep.set_running"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.set_running">[docs]</a>    <span class="k">def</span> <span class="nf">set_running</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">context</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a status denoting that the step is still running</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            context (kwargs) : Keyword args of the dict that should be yielded</span>
+<span class="sd">                from :meth:`run`</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            variables (dict)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_status</span> <span class="o">=</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">ACTIVE</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_task_trace</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">context</span></div>
+
+<div class="viewcode-block" id="AbstractStep.set_succeeded"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.set_succeeded">[docs]</a>    <span class="k">def</span> <span class="nf">set_succeeded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">context</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a status denoting that the step has succeeded</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            context (kwargs) : Keyword args of the dict that should be yielded</span>
+<span class="sd">                from :meth:`run`</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            variables (dict)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Reset the number of aborts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_aborts</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_status</span> <span class="o">=</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">SUCCEEDED</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_task_trace</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">context</span></div>
+
+<div class="viewcode-block" id="AbstractStep.set_aborted"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.set_aborted">[docs]</a>    <span class="k">def</span> <span class="nf">set_aborted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">context</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a status denoting that the step has failed</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            context (kwargs) : Keyword args of the dict that should be yielded</span>
+<span class="sd">                from :meth:`run`</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            variables (dict)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Update the number of aborts for this component and include it in the</span>
+        <span class="c1"># context</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_aborts</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">context</span><span class="p">[</span><span class="s1">&#39;num_aborts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_aborts</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_status</span> <span class="o">=</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">ABORTED</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_task_trace</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">context</span></div>
+
+<div class="viewcode-block" id="AbstractStep.set_preempted"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.set_preempted">[docs]</a>    <span class="k">def</span> <span class="nf">set_preempted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">context</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a status denoting that the step was preempted</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            context (kwargs) : Keyword args of the dict that should be yielded</span>
+<span class="sd">                from :meth:`run`</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            variables (dict)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_status</span> <span class="o">=</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">PREEMPTED</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_task_trace</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">context</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">status</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Current status of this step&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_status</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">num_aborts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The number of times this step has exited with:const:`GoalStatus.ABORTED`</span>
+<span class="sd">        since the last time it exited with a :const:`GoalStatus.SUCCEEDED`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_aborts</span>
+
+<div class="viewcode-block" id="AbstractStep.is_running"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.is_running">[docs]</a>    <span class="k">def</span> <span class="nf">is_running</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks to see if the current step is running. ``True`` if :meth:`run`</span>
+<span class="sd">        yielded using :meth:`set_running`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_status</span> <span class="o">==</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">ACTIVE</span></div>
+
+<div class="viewcode-block" id="AbstractStep.is_succeeded"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.is_succeeded">[docs]</a>    <span class="k">def</span> <span class="nf">is_succeeded</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks to see if the current step is running. ``True`` if :meth:`run`</span>
+<span class="sd">        yielded using :meth:`set_succeeded`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_status</span> <span class="o">==</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">SUCCEEDED</span></div>
+
+<div class="viewcode-block" id="AbstractStep.is_preempted"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.is_preempted">[docs]</a>    <span class="k">def</span> <span class="nf">is_preempted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks to see if the current step was preempted. ``True`` if :meth:`run`</span>
+<span class="sd">        yielded using :meth:`set_preempted`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_status</span> <span class="o">==</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">PREEMPTED</span></div>
+
+<div class="viewcode-block" id="AbstractStep.is_aborted"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.is_aborted">[docs]</a>    <span class="k">def</span> <span class="nf">is_aborted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks to see if the current step is running. ``True`` if :meth:`run`</span>
+<span class="sd">        yielded using :meth:`set_aborted`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_running</span><span class="p">()</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_succeeded</span><span class="p">()</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_preempted</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="AbstractStep.update_beliefs"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.update_beliefs">[docs]</a>    <span class="k">def</span> <span class="nf">update_beliefs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beliefs</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{}):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates the event trace with belief updates. Expects lists/tuples&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">belief</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">beliefs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Invalid value for belief, </span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">belief</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="n">ExecutionEvent</span><span class="p">(</span>
+                <span class="n">stamp</span><span class="o">=</span><span class="n">rospy</span><span class="o">.</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">belief</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">BELIEF_EVENT</span><span class="p">,</span>
+                <span class="n">belief_metadata</span><span class="o">=</span><span class="n">BeliefMetadata</span><span class="p">(</span>
+                    <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+                    <span class="n">context</span><span class="o">=</span><span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">context</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_trace</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">event</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AbstractStep.notify_action_send_goal"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.notify_action_send_goal">[docs]</a>    <span class="k">def</span> <span class="nf">notify_action_send_goal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action_server_name</span><span class="p">,</span> <span class="n">goal</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates the event trace when a goal is sent to an action server&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_monitor_trace</span><span class="p">(</span>
+            <span class="n">AbstractStep</span><span class="o">.</span><span class="n">ACTION_SEND_GOAL_EVENT</span><span class="p">,</span>
+            <span class="p">{</span> <span class="s1">&#39;goal&#39;</span><span class="p">:</span> <span class="n">goal</span> <span class="p">},</span>
+            <span class="n">actions</span><span class="o">=</span><span class="p">[</span><span class="n">action_server_name</span><span class="p">]</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="AbstractStep.notify_action_recv_result"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.notify_action_recv_result">[docs]</a>    <span class="k">def</span> <span class="nf">notify_action_recv_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action_server_name</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates the event trace when a result is received from an action</span>
+<span class="sd">        server&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_monitor_trace</span><span class="p">(</span>
+            <span class="n">AbstractStep</span><span class="o">.</span><span class="n">ACTION_RECV_RESULT_EVENT</span><span class="p">,</span>
+            <span class="p">{</span> <span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span> <span class="s1">&#39;result&#39;</span><span class="p">:</span> <span class="n">result</span> <span class="p">},</span>
+            <span class="n">actions</span><span class="o">=</span><span class="p">[</span><span class="n">action_server_name</span><span class="p">]</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="AbstractStep.notify_action_cancel"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.notify_action_cancel">[docs]</a>    <span class="k">def</span> <span class="nf">notify_action_cancel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action_server_name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates the event trace when a goal sent to an action server is</span>
+<span class="sd">        cancelled&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_monitor_trace</span><span class="p">(</span>
+            <span class="n">AbstractStep</span><span class="o">.</span><span class="n">ACTION_CANCEL_EVENT</span><span class="p">,</span>
+            <span class="p">{},</span>
+            <span class="n">actions</span><span class="o">=</span><span class="p">[</span><span class="n">action_server_name</span><span class="p">]</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="AbstractStep.notify_service_called"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.notify_service_called">[docs]</a>    <span class="k">def</span> <span class="nf">notify_service_called</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">service_name</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{}):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates the event trace when a service is called&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_monitor_trace</span><span class="p">(</span>
+            <span class="n">AbstractStep</span><span class="o">.</span><span class="n">SERVICE_CALLED_EVENT</span><span class="p">,</span>
+            <span class="n">context</span><span class="p">,</span>
+            <span class="n">services</span><span class="o">=</span><span class="p">[</span><span class="n">service_name</span><span class="p">]</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="AbstractStep.notify_topic_published"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.notify_topic_published">[docs]</a>    <span class="k">def</span> <span class="nf">notify_topic_published</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates the event trace when a message is published on a topic&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_monitor_trace</span><span class="p">(</span>
+            <span class="n">AbstractStep</span><span class="o">.</span><span class="n">TOPIC_PUBLISHED_EVENT</span><span class="p">,</span>
+            <span class="p">{</span> <span class="s1">&#39;msg&#39;</span><span class="p">:</span> <span class="n">msg</span> <span class="p">},</span>
+            <span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="AbstractStep.notify_topic_message"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.notify_topic_message">[docs]</a>    <span class="k">def</span> <span class="nf">notify_topic_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates the event trace when a message is received on a topic&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_monitor_trace</span><span class="p">(</span>
+            <span class="n">AbstractStep</span><span class="o">.</span><span class="n">TOPIC_MESSAGE_EVENT</span><span class="p">,</span>
+            <span class="p">{</span> <span class="s1">&#39;msg&#39;</span><span class="p">:</span> <span class="n">msg</span> <span class="p">},</span>
+            <span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="n">topic_name</span><span class="p">]</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="AbstractStep.init"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.init">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the step. Called when connections to ROS must be setup.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name (str) : Name of the action or task. Used as an identifier</span>
+<span class="sd">            args : Additional args that might be relevant. Missing by default</span>
+<span class="sd">            kwargs : Additional args that could be relevant. Missing by default</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="AbstractStep.run"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.run">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run the step. This method returns a generator. So don&#39;t ``return``;</span>
+<span class="sd">        instead ``yield`` a dictionary of values to keep executing. Stop</span>
+<span class="sd">        yielding values or raise ``StopIteration`` to stop the run.</span>
+
+<span class="sd">        It is recommended that you use the methods :meth:`set_running`,</span>
+<span class="sd">        :meth:`set_succeeded`, :meth:`set_preempted`, :meth:`set_aborted` when</span>
+<span class="sd">        yielding values from this function. The methods ensure that</span>
+<span class="sd">        :attr:`status` is set appropriately for this step.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            params (kwargs) : Keyword args that might be relevant to the step</span>
+
+<span class="sd">        Yields:</span>
+<span class="sd">            variables (dict) : A dictionary of variables as the step executes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="AbstractStep.stop"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.stop">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stop the step. How this is handled by the client is up to the client.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="AbstractStep.__call__"><a class="viewcode-back" href="../../task_executor.html#task_executor.abstract_step.AbstractStep.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calls the :meth:`run` generator internally and returns this node&#39;s</span>
+<span class="sd">        :attr:`status`. This is a blocking call.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            params (kwargs) : Keyword args that might be relevant to the step</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (tuple):</span>
+<span class="sd">                - status (``actionlib_msgs/GoalStatus``) the step&#39;s \</span>
+<span class="sd">                    :attr:`status`</span>
+<span class="sd">                - variables (dict) the last yielded dictionary from :meth:`run`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">variables</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">rospy</span><span class="o">.</span><span class="n">is_shutdown</span><span class="p">():</span>
+                <span class="k">break</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">variables</span><span class="p">,)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, RAIL.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

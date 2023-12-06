@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>task_executor.ops &mdash; task_execution 0.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=c1dcd045"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            task_execution
+          </a>
+              <div class="version">
+                0.0.2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../task_executor.html">task_executor package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../task_monitor.html">task_monitor package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">task_execution</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">task_executor.ops</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for task_executor.ops</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># The operations that can be specified in the YAML</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">division</span>
+
+<span class="kn">import</span> <span class="nn">rospy</span>
+
+
+<span class="c1"># Private helper functions</span>
+
+<span class="k">def</span> <span class="nf">_get_heap_for_var_name</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Given a variable name, return the &#39;heap&#39; that contains it&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">var_name</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">variables</span>
+    <span class="k">elif</span> <span class="n">var_name</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">params</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="c1"># The Operations. All operations receive a current_params and current_variables</span>
+
+<div class="viewcode-block" id="assign"><a class="viewcode-back" href="../../task_executor.ops.html#task_executor.ops.assign">[docs]</a><span class="k">def</span> <span class="nf">assign</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">current_params</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Assigns the indicated `value` to a variable with name `var_name`</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        var_name (str) : Name of the variable to assign the value to</span>
+<span class="sd">        value (any) : Value to assign to that variable</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary with :code:`{ var_name: value }`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="n">var_name</span><span class="p">:</span> <span class="n">value</span> <span class="p">}</span></div>
+
+<div class="viewcode-block" id="decrement"><a class="viewcode-back" href="../../task_executor.ops.html#task_executor.ops.decrement">[docs]</a><span class="k">def</span> <span class="nf">decrement</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">current_params</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Decrements the value of variable `var_name` in the `current_variables`. The</span>
+<span class="sd">    value must exist and must be an integer.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        var_name (str) : Name of the variable to decrement</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary with :code:`{ var_name: var_name-1 }`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">heap</span> <span class="o">=</span> <span class="n">_get_heap_for_var_name</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">,</span> <span class="n">current_params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="n">var_name</span><span class="p">:</span> <span class="n">heap</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">}</span></div>
+
+<div class="viewcode-block" id="increment"><a class="viewcode-back" href="../../task_executor.ops.html#task_executor.ops.increment">[docs]</a><span class="k">def</span> <span class="nf">increment</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">current_params</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Increments the value of variable `var_name` in the `current_variables`. The</span>
+<span class="sd">    value must exist and must be an integer.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        var_name (str) : Name of the variable to decrement</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary with :code:`{ var_name: var_name+1 }`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">heap</span> <span class="o">=</span> <span class="n">_get_heap_for_var_name</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">,</span> <span class="n">current_params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="n">var_name</span><span class="p">:</span> <span class="n">heap</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">}</span></div>
+
+<div class="viewcode-block" id="make_boolean"><a class="viewcode-back" href="../../task_executor.ops.html#task_executor.ops.make_boolean">[docs]</a><span class="k">def</span> <span class="nf">make_boolean</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">bool_name</span><span class="p">,</span> <span class="n">current_params</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make the value of a variable in the current variables a boolean.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        var_name (str) : Name of the variable to binarize</span>
+<span class="sd">        bool_name (str) : Name of the binarized version of the variable</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary with :code:`{ bool_name: bool(var_name) }`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">heap</span> <span class="o">=</span> <span class="n">_get_heap_for_var_name</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">,</span> <span class="n">current_params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="n">bool_name</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">heap</span><span class="p">[</span><span class="n">var_name</span><span class="p">])</span> <span class="p">}</span></div>
+
+<div class="viewcode-block" id="negate"><a class="viewcode-back" href="../../task_executor.ops.html#task_executor.ops.negate">[docs]</a><span class="k">def</span> <span class="nf">negate</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">negate_name</span><span class="p">,</span> <span class="n">current_params</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Negate the current value of var_name =&gt; not var_name</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        var_name (str) : Name of the variable to negate</span>
+<span class="sd">        negate_name (str) : Name of the variable to contain the negation</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary with :code:`{ negate_name: not var_name }`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">heap</span> <span class="o">=</span> <span class="n">_get_heap_for_var_name</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">,</span> <span class="n">current_params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="n">negate_name</span><span class="p">:</span> <span class="ow">not</span> <span class="n">heap</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span> <span class="p">}</span></div>
+
+<div class="viewcode-block" id="get_index"><a class="viewcode-back" href="../../task_executor.ops.html#task_executor.ops.get_index">[docs]</a><span class="k">def</span> <span class="nf">get_index</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">idx_name</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">current_params</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Assuming that var_name is an indexable array / dict, return the desired idx</span>
+<span class="sd">    from within the array</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        var_name (str): Name of the variable to get the index from</span>
+<span class="sd">        idx_name (str): Name of the output variable to contain the indexed item</span>
+<span class="sd">        idx (int, str): The desired index in var_name. Can be int or str</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary with :code:`{ idx_name: var_name[idx] }`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">heap</span> <span class="o">=</span> <span class="n">_get_heap_for_var_name</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">,</span> <span class="n">current_params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="n">idx_name</span><span class="p">:</span> <span class="n">heap</span><span class="p">[</span><span class="n">var_name</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="p">}</span></div>
+
+<div class="viewcode-block" id="check_value"><a class="viewcode-back" href="../../task_executor.ops.html#task_executor.ops.check_value">[docs]</a><span class="k">def</span> <span class="nf">check_value</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">check_name</span><span class="p">,</span> <span class="n">current_params</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check if the value of var_name matches the one indicated, and return the</span>
+<span class="sd">    result in check_name.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        var_name (str): Name of the variable to check the value of</span>
+<span class="sd">        value (*): The value to check</span>
+<span class="sd">        check_name (str): The name of the variable containing the check result</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary with :code:`{ check_name: var_name == value }`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">heap</span> <span class="o">=</span> <span class="n">_get_heap_for_var_name</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">,</span> <span class="n">current_params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="n">check_name</span><span class="p">:</span> <span class="n">heap</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span> <span class="o">==</span> <span class="n">value</span> <span class="p">}</span></div>
+
+<div class="viewcode-block" id="print_var"><a class="viewcode-back" href="../../task_executor.ops.html#task_executor.ops.print_var">[docs]</a><span class="k">def</span> <span class="nf">print_var</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">current_params</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Print the variable with var_name</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        var_name (str): Name of the variable to print</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">heap</span> <span class="o">=</span> <span class="n">_get_heap_for_var_name</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">,</span> <span class="n">current_params</span><span class="p">)</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Op print_var: </span><span class="si">{}</span><span class="s2"> = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">heap</span><span class="p">[</span><span class="n">var_name</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="p">{}</span></div>
+
+<div class="viewcode-block" id="abort"><a class="viewcode-back" href="../../task_executor.ops.html#task_executor.ops.abort">[docs]</a><span class="k">def</span> <span class="nf">abort</span><span class="p">(</span><span class="n">current_params</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Abort the task</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Task is aborted&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="noop"><a class="viewcode-back" href="../../task_executor.ops.html#task_executor.ops.noop">[docs]</a><span class="k">def</span> <span class="nf">noop</span><span class="p">(</span><span class="n">current_params</span><span class="p">,</span> <span class="n">current_variables</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Does nothing</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{}</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, RAIL.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

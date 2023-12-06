@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>task_monitor package &mdash; task_execution 0.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=c1dcd045"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="task_monitor.monitors package" href="task_monitor.monitors.html" />
+    <link rel="prev" title="run_task.py" href="task_executor.run_task.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            task_execution
+          </a>
+              <div class="version">
+                0.0.2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="task_executor.html">task_executor package</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">task_monitor package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="task_monitor.monitors.html">task_monitor.monitors package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="task_monitor.utils.html">task_monitor.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-task_monitor.execution_monitor">task_monitor.execution_monitor module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#task_monitor.execution_monitor.ExecutionMonitor"><code class="docutils literal notranslate"><span class="pre">ExecutionMonitor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_monitor.ExecutionMonitor.TRACE_START_SERVICE"><code class="docutils literal notranslate"><span class="pre">ExecutionMonitor.TRACE_START_SERVICE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_monitor.ExecutionMonitor.TRACE_STOP_SERVICE"><code class="docutils literal notranslate"><span class="pre">ExecutionMonitor.TRACE_STOP_SERVICE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_monitor.ExecutionMonitor.start"><code class="docutils literal notranslate"><span class="pre">ExecutionMonitor.start()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_monitor.ExecutionMonitor.stop"><code class="docutils literal notranslate"><span class="pre">ExecutionMonitor.stop()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-task_monitor.execution_tracer">task_monitor.execution_tracer module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer"><code class="docutils literal notranslate"><span class="pre">Tracer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.AUTO_INCLUDE_BELIEF_EVENTS"><code class="docutils literal notranslate"><span class="pre">Tracer.AUTO_INCLUDE_BELIEF_EVENTS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.AUTO_INCLUDE_TASK_EVENTS"><code class="docutils literal notranslate"><span class="pre">Tracer.AUTO_INCLUDE_TASK_EVENTS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.DEFAULT_TASK_DEFINITIONS_FILE"><code class="docutils literal notranslate"><span class="pre">Tracer.DEFAULT_TASK_DEFINITIONS_FILE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.EXCLUDE_BELIEF_EVENTS"><code class="docutils literal notranslate"><span class="pre">Tracer.EXCLUDE_BELIEF_EVENTS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.EXCLUDE_MONITOR_EVENTS"><code class="docutils literal notranslate"><span class="pre">Tracer.EXCLUDE_MONITOR_EVENTS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.EXCLUDE_TASK_STEP_EVENTS"><code class="docutils literal notranslate"><span class="pre">Tracer.EXCLUDE_TASK_STEP_EVENTS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.EXECUTION_TRACE_TOPIC"><code class="docutils literal notranslate"><span class="pre">Tracer.EXECUTION_TRACE_TOPIC</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.INCLUDE_BELIEF_EVENTS"><code class="docutils literal notranslate"><span class="pre">Tracer.INCLUDE_BELIEF_EVENTS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.INCLUDE_MONITOR_EVENTS"><code class="docutils literal notranslate"><span class="pre">Tracer.INCLUDE_MONITOR_EVENTS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.INCLUDE_TASK_STEP_EVENTS"><code class="docutils literal notranslate"><span class="pre">Tracer.INCLUDE_TASK_STEP_EVENTS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.INCLUDE_UNKNOWN_TASK_EVENTS"><code class="docutils literal notranslate"><span class="pre">Tracer.INCLUDE_UNKNOWN_TASK_EVENTS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.MAX_TRACE_LENGTH"><code class="docutils literal notranslate"><span class="pre">Tracer.MAX_TRACE_LENGTH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.TIME_EVENT"><code class="docutils literal notranslate"><span class="pre">Tracer.TIME_EVENT</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.UNKNOWN_TASK_NAME"><code class="docutils literal notranslate"><span class="pre">Tracer.UNKNOWN_TASK_NAME</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.exclude_from_trace"><code class="docutils literal notranslate"><span class="pre">Tracer.exclude_from_trace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.initialize_trace"><code class="docutils literal notranslate"><span class="pre">Tracer.initialize_trace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.last_event"><code class="docutils literal notranslate"><span class="pre">Tracer.last_event</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.num_events"><code class="docutils literal notranslate"><span class="pre">Tracer.num_events</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.start"><code class="docutils literal notranslate"><span class="pre">Tracer.start()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.stop"><code class="docutils literal notranslate"><span class="pre">Tracer.stop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.trace"><code class="docutils literal notranslate"><span class="pre">Tracer.trace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.trace_idx_by_type"><code class="docutils literal notranslate"><span class="pre">Tracer.trace_idx_by_type()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.execution_tracer.Tracer.update_trace"><code class="docutils literal notranslate"><span class="pre">Tracer.update_trace()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#task_monitor.execution_tracer.classproperty"><code class="docutils literal notranslate"><span class="pre">classproperty</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#task_monitor.execution_tracer.discretize_task_step_status"><code class="docutils literal notranslate"><span class="pre">discretize_task_step_status()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#task_monitor.execution_tracer.get_event_name"><code class="docutils literal notranslate"><span class="pre">get_event_name()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#task-monitor-intervention-monitor-module">task_monitor.intervention_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#task-monitor-intervention-tracer-module">task_monitor.intervention_tracer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#task-monitor-monitoring-module">task_monitor.monitoring module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-task_monitor.recovery_strategies">task_monitor.recovery_strategies module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies"><code class="docutils literal notranslate"><span class="pre">RecoveryStrategies</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies.BELIEF_KEYS"><code class="docutils literal notranslate"><span class="pre">RecoveryStrategies.BELIEF_KEYS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies.MAX_PENULTIMATE_TASK_ABORTS"><code class="docutils literal notranslate"><span class="pre">RecoveryStrategies.MAX_PENULTIMATE_TASK_ABORTS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies.MAX_PRIMARY_TASK_ABORTS"><code class="docutils literal notranslate"><span class="pre">RecoveryStrategies.MAX_PRIMARY_TASK_ABORTS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies.check_contradictory_beliefs"><code class="docutils literal notranslate"><span class="pre">RecoveryStrategies.check_contradictory_beliefs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies.create_continue_result_context"><code class="docutils literal notranslate"><span class="pre">RecoveryStrategies.create_continue_result_context()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies.get_final_component_context"><code class="docutils literal notranslate"><span class="pre">RecoveryStrategies.get_final_component_context()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies.get_last_goal_location"><code class="docutils literal notranslate"><span class="pre">RecoveryStrategies.get_last_goal_location()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies.get_number_of_component_aborts"><code class="docutils literal notranslate"><span class="pre">RecoveryStrategies.get_number_of_component_aborts()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies.get_strategy"><code class="docutils literal notranslate"><span class="pre">RecoveryStrategies.get_strategy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies.init"><code class="docutils literal notranslate"><span class="pre">RecoveryStrategies.init()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies.set_task_hint_in_context"><code class="docutils literal notranslate"><span class="pre">RecoveryStrategies.set_task_hint_in_context()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-task_monitor.server">task_monitor.server module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#task_monitor.server.TaskMonitorServer"><code class="docutils literal notranslate"><span class="pre">TaskMonitorServer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.server.TaskMonitorServer.CONNECTION_CHECK_DURATION"><code class="docutils literal notranslate"><span class="pre">TaskMonitorServer.CONNECTION_CHECK_DURATION</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.server.TaskMonitorServer.RECOVERY_ACTION_SERVER"><code class="docutils literal notranslate"><span class="pre">TaskMonitorServer.RECOVERY_ACTION_SERVER</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.server.TaskMonitorServer.RECOVERY_TASKS_PARAM"><code class="docutils literal notranslate"><span class="pre">TaskMonitorServer.RECOVERY_TASKS_PARAM</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.server.TaskMonitorServer.execute"><code class="docutils literal notranslate"><span class="pre">TaskMonitorServer.execute()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.server.TaskMonitorServer.start"><code class="docutils literal notranslate"><span class="pre">TaskMonitorServer.start()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_monitor.server.TaskMonitorServer.stop"><code class="docutils literal notranslate"><span class="pre">TaskMonitorServer.stop()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">task_execution</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">task_monitor package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/task_monitor.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="task-monitor-package">
+<h1>task_monitor package<a class="headerlink" href="#task-monitor-package" title="Permalink to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="task_monitor.monitors.html">task_monitor.monitors package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-arm-contact-monitor-module">task_monitor.monitors.arm_contact_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-arm-pose-monitor-module">task_monitor.monitors.arm_pose_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-base-collision-monitor-module">task_monitor.monitors.base_collision_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-base-location-monitor-module">task_monitor.monitors.base_location_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-base-stall-monitor-module">task_monitor.monitors.base_stall_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-battery-state-monitor-module">task_monitor.monitors.battery_state_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-breaker-state-monitor-module">task_monitor.monitors.breaker_state_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-costmap-monitor-module">task_monitor.monitors.costmap_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-diagnostics-monitor-module">task_monitor.monitors.diagnostics_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-global-plan-monitor-module">task_monitor.monitors.global_plan_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-gripper-closed-monitor-module">task_monitor.monitors.gripper_closed_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-localization-monitor-module">task_monitor.monitors.localization_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-look-direction-monitor-module">task_monitor.monitors.look_direction_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-moveit-monitor-module">task_monitor.monitors.moveit_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-segmentation-monitor-module">task_monitor.monitors.segmentation_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-torso-raised-monitor-module">task_monitor.monitors.torso_raised_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.monitors.html#task-monitor-monitors-wifi-monitor-module">task_monitor.monitors.wifi_monitor module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="task_monitor.utils.html">task_monitor.utils package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.utils.html#task-monitor-utils-costmap-utils-module">task_monitor.utils.costmap_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_monitor.utils.html#task-monitor-utils-relay-octomap-module">task_monitor.utils.relay_octomap module</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="module-task_monitor.execution_monitor">
+<span id="task-monitor-execution-monitor-module"></span><h2>task_monitor.execution_monitor module<a class="headerlink" href="#module-task_monitor.execution_monitor" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="task_monitor.execution_monitor.ExecutionMonitor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">task_monitor.execution_monitor.</span></span><span class="sig-name descname"><span class="pre">ExecutionMonitor</span></span><a class="reference internal" href="_modules/task_monitor/execution_monitor.html#ExecutionMonitor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.execution_monitor.ExecutionMonitor" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class is the entrypoint into the combined information available for
+diagnoses</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_monitor.ExecutionMonitor.TRACE_START_SERVICE">
+<span class="sig-name descname"><span class="pre">TRACE_START_SERVICE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'/execution_monitor/start_trace'</span></em><a class="headerlink" href="#task_monitor.execution_monitor.ExecutionMonitor.TRACE_START_SERVICE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_monitor.ExecutionMonitor.TRACE_STOP_SERVICE">
+<span class="sig-name descname"><span class="pre">TRACE_STOP_SERVICE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'/execution_monitor/stop_trace'</span></em><a class="headerlink" href="#task_monitor.execution_monitor.ExecutionMonitor.TRACE_STOP_SERVICE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.execution_monitor.ExecutionMonitor.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">req</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/execution_monitor.html#ExecutionMonitor.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.execution_monitor.ExecutionMonitor.start" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.execution_monitor.ExecutionMonitor.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">req</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/execution_monitor.html#ExecutionMonitor.stop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.execution_monitor.ExecutionMonitor.stop" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-task_monitor.execution_tracer">
+<span id="task-monitor-execution-tracer-module"></span><h2>task_monitor.execution_tracer module<a class="headerlink" href="#module-task_monitor.execution_tracer" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">task_monitor.execution_tracer.</span></span><span class="sig-name descname"><span class="pre">Tracer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/execution_tracer.html#Tracer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.execution_tracer.Tracer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class monitors the execution trace messages and compiles the data into
+a events trace stream</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.AUTO_INCLUDE_BELIEF_EVENTS">
+<span class="sig-name descname"><span class="pre">AUTO_INCLUDE_BELIEF_EVENTS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.AUTO_INCLUDE_BELIEF_EVENTS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.AUTO_INCLUDE_TASK_EVENTS">
+<span class="sig-name descname"><span class="pre">AUTO_INCLUDE_TASK_EVENTS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.AUTO_INCLUDE_TASK_EVENTS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.DEFAULT_TASK_DEFINITIONS_FILE">
+<span class="sig-name descname"><span class="pre">DEFAULT_TASK_DEFINITIONS_FILE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'/home/hello-robot/catkin_ws/src/rerail_stretchit_task_execution/task_executor/config/tasks.yaml'</span></em><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.DEFAULT_TASK_DEFINITIONS_FILE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.EXCLUDE_BELIEF_EVENTS">
+<span class="sig-name descname"><span class="pre">EXCLUDE_BELIEF_EVENTS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.EXCLUDE_BELIEF_EVENTS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.EXCLUDE_MONITOR_EVENTS">
+<span class="sig-name descname"><span class="pre">EXCLUDE_MONITOR_EVENTS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'diagnostics_update:</span> <span class="pre">Charger',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">Gripper</span> <span class="pre">IMU</span> <span class="pre">Accelerometer',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">Gripper</span> <span class="pre">IMU</span> <span class="pre">Gyro',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">IMU</span> <span class="pre">1</span> <span class="pre">Accelerometer',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">IMU</span> <span class="pre">1</span> <span class="pre">Gyro',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">Mainboard',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">battery_breaker',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">computer_breaker',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">elbow_flex_mcb',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">forearm_roll_mcb',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">gripper_board_mcb',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">head_pan_mcb',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">head_tilt_mcb',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">joy:</span> <span class="pre">Joystick</span> <span class="pre">Driver</span> <span class="pre">Status',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">joy_node:</span> <span class="pre">Joystick</span> <span class="pre">Driver</span> <span class="pre">Status',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">l_wheel_mcb',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">r_wheel_mcb',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">shoulder_lift_mcb',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">shoulder_pan_mcb',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">sick_tim551_2050001:</span> <span class="pre">/base_scan_raw</span> <span class="pre">topic</span> <span class="pre">status',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">sound_play:</span> <span class="pre">Node</span> <span class="pre">State',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">supply_breaker',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">torso_lift_mcb',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">upperarm_roll_mcb',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">velodyne_link_nodelet_manager:</span> <span class="pre">velodyne_packets</span> <span class="pre">topic</span> <span class="pre">status',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">wrist_flex_mcb',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">wrist_roll_mcb',</span> <span class="pre">'task_action_cancel',</span> <span class="pre">'task_action_recv_result',</span> <span class="pre">'task_action_send_goal',</span> <span class="pre">'task_service_called',</span> <span class="pre">'task_topic_message',</span> <span class="pre">'task_topic_published'}</span></em><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.EXCLUDE_MONITOR_EVENTS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.EXCLUDE_TASK_STEP_EVENTS">
+<span class="sig-name descname"><span class="pre">EXCLUDE_TASK_STEP_EVENTS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.EXCLUDE_TASK_STEP_EVENTS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.EXECUTION_TRACE_TOPIC">
+<span class="sig-name descname"><span class="pre">EXECUTION_TRACE_TOPIC</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'/execution_monitor/trace'</span></em><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.EXECUTION_TRACE_TOPIC" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.INCLUDE_BELIEF_EVENTS">
+<span class="sig-name descname"><span class="pre">INCLUDE_BELIEF_EVENTS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['robot_at_dropoff',</span> <span class="pre">'robot_at_pick_point',</span> <span class="pre">'task_at_dropoff']</span></em><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.INCLUDE_BELIEF_EVENTS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.INCLUDE_MONITOR_EVENTS">
+<span class="sig-name descname"><span class="pre">INCLUDE_MONITOR_EVENTS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['arm_contact_update',</span> <span class="pre">'base_collision_update',</span> <span class="pre">'base_stall_update',</span> <span class="pre">'battery_state_update',</span> <span class="pre">'breaker_state_update',</span> <span class="pre">'costmap_update',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">arm_breaker',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">base_breaker',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">gripper_breaker',</span> <span class="pre">'diagnostics_update:</span> <span class="pre">point_cloud_diagnostic:</span> <span class="pre">delay',</span> <span class="pre">'global_plan_collision_update',</span> <span class="pre">'localization_update',</span> <span class="pre">'look_direction_update',</span> <span class="pre">'moveit_update:</span> <span class="pre">motion</span> <span class="pre">plan</span> <span class="pre">failure',</span> <span class="pre">'moveit_update:</span> <span class="pre">invalid</span> <span class="pre">motion</span> <span class="pre">plan',</span> <span class="pre">'moveit_update:</span> <span class="pre">environment</span> <span class="pre">changed',</span> <span class="pre">'moveit_update:</span> <span class="pre">controller</span> <span class="pre">failed',</span> <span class="pre">'moveit_update:</span> <span class="pre">other</span> <span class="pre">failure',</span> <span class="pre">'segmentation_update',</span> <span class="pre">'wifi_update']</span></em><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.INCLUDE_MONITOR_EVENTS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.INCLUDE_TASK_STEP_EVENTS">
+<span class="sig-name descname"><span class="pre">INCLUDE_TASK_STEP_EVENTS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.INCLUDE_TASK_STEP_EVENTS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.INCLUDE_UNKNOWN_TASK_EVENTS">
+<span class="sig-name descname"><span class="pre">INCLUDE_UNKNOWN_TASK_EVENTS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.INCLUDE_UNKNOWN_TASK_EVENTS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.MAX_TRACE_LENGTH">
+<span class="sig-name descname"><span class="pre">MAX_TRACE_LENGTH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">9999</span></em><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.MAX_TRACE_LENGTH" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.TIME_EVENT">
+<span class="sig-name descname"><span class="pre">TIME_EVENT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">255</span></em><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.TIME_EVENT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.UNKNOWN_TASK_NAME">
+<span class="sig-name descname"><span class="pre">UNKNOWN_TASK_NAME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'&lt;unknown&gt;'</span></em><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.UNKNOWN_TASK_NAME" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.exclude_from_trace">
+<span class="sig-name descname"><span class="pre">exclude_from_trace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/execution_tracer.html#Tracer.exclude_from_trace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.exclude_from_trace" title="Permalink to this definition"></a></dt>
+<dd><p>Check to see if the msg should be excluded from the trace</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.initialize_trace">
+<span class="sig-name descname"><span class="pre">initialize_trace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_time</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/execution_tracer.html#Tracer.initialize_trace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.initialize_trace" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the first trace event</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.last_event">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">last_event</span></span><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.last_event" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.num_events">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_events</span></span><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.num_events" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/execution_tracer.html#Tracer.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.start" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/execution_tracer.html#Tracer.stop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.stop" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.trace">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">trace</span></span><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.trace" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.trace_idx_by_type">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">trace_idx_by_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trace_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/execution_tracer.html#Tracer.trace_idx_by_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.trace_idx_by_type" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.Tracer.update_trace">
+<span class="sig-name descname"><span class="pre">update_trace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/execution_tracer.html#Tracer.update_trace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.execution_tracer.Tracer.update_trace" title="Permalink to this definition"></a></dt>
+<dd><p>As messages come in, update the trace</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.classproperty">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">task_monitor.execution_tracer.</span></span><span class="sig-name descname"><span class="pre">classproperty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fget</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fdel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/execution_tracer.html#classproperty"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.execution_tracer.classproperty" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">property</span></code></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.discretize_task_step_status">
+<span class="sig-prename descclassname"><span class="pre">task_monitor.execution_tracer.</span></span><span class="sig-name descname"><span class="pre">discretize_task_step_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">status</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/execution_tracer.html#discretize_task_step_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.execution_tracer.discretize_task_step_status" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="task_monitor.execution_tracer.get_event_name">
+<span class="sig-prename descclassname"><span class="pre">task_monitor.execution_tracer.</span></span><span class="sig-name descname"><span class="pre">get_event_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_signature</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/execution_tracer.html#get_event_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.execution_tracer.get_event_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="task-monitor-intervention-monitor-module">
+<h2>task_monitor.intervention_monitor module<a class="headerlink" href="#task-monitor-intervention-monitor-module" title="Permalink to this heading"></a></h2>
+</section>
+<section id="task-monitor-intervention-tracer-module">
+<h2>task_monitor.intervention_tracer module<a class="headerlink" href="#task-monitor-intervention-tracer-module" title="Permalink to this heading"></a></h2>
+</section>
+<section id="task-monitor-monitoring-module">
+<h2>task_monitor.monitoring module<a class="headerlink" href="#task-monitor-monitoring-module" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-task_monitor.recovery_strategies">
+<span id="task-monitor-recovery-strategies-module"></span><h2>task_monitor.recovery_strategies module<a class="headerlink" href="#module-task_monitor.recovery_strategies" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="task_monitor.recovery_strategies.RecoveryStrategies">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">task_monitor.recovery_strategies.</span></span><span class="sig-name descname"><span class="pre">RecoveryStrategies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tasks_config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/recovery_strategies.html#RecoveryStrategies"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.recovery_strategies.RecoveryStrategies" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class is responsible for determining the recovery task to execute when
+given the request for assistance goal and its corresponding context. The
+primary workhorse of this class is <a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies.get_strategy" title="task_monitor.recovery_strategies.RecoveryStrategies.get_strategy"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_strategy()</span></code></a> which takes in a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">RequestAssistanceGoal</span></code>, and generates an <code class="xref py py-class docutils literal notranslate"><span class="pre">ExecuteGoal</span></code>, a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">RequestAssistanceResult</span></code>, and a <code class="docutils literal notranslate"><span class="pre">context</span></code> on how to proceed when
+the recovery execution is complete.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.recovery_strategies.RecoveryStrategies.BELIEF_KEYS">
+<span class="sig-name descname"><span class="pre">BELIEF_KEYS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['ROBOT_AT_DROPOFF',</span> <span class="pre">'ROBOT_AT_PICK_POINT',</span> <span class="pre">'TASK_AT_DROPOFF']</span></em><a class="headerlink" href="#task_monitor.recovery_strategies.RecoveryStrategies.BELIEF_KEYS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.recovery_strategies.RecoveryStrategies.MAX_PENULTIMATE_TASK_ABORTS">
+<span class="sig-name descname"><span class="pre">MAX_PENULTIMATE_TASK_ABORTS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">7</span></em><a class="headerlink" href="#task_monitor.recovery_strategies.RecoveryStrategies.MAX_PENULTIMATE_TASK_ABORTS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.recovery_strategies.RecoveryStrategies.MAX_PRIMARY_TASK_ABORTS">
+<span class="sig-name descname"><span class="pre">MAX_PRIMARY_TASK_ABORTS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">50</span></em><a class="headerlink" href="#task_monitor.recovery_strategies.RecoveryStrategies.MAX_PRIMARY_TASK_ABORTS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.recovery_strategies.RecoveryStrategies.check_contradictory_beliefs">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">check_contradictory_beliefs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">beliefs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/recovery_strategies.html#RecoveryStrategies.check_contradictory_beliefs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.recovery_strategies.RecoveryStrategies.check_contradictory_beliefs" title="Permalink to this definition"></a></dt>
+<dd><p>Given a set of beliefs, check if there is any contradiction.
+Currently only checking the contradiction between task and robot belief about its current location.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>beliefs</strong> (<em>dict</em>) – </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if there is a contradiction, False otherwise</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(bool)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.recovery_strategies.RecoveryStrategies.create_continue_result_context">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_continue_result_context</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">goal_context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/recovery_strategies.html#RecoveryStrategies.create_continue_result_context"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.recovery_strategies.RecoveryStrategies.create_continue_result_context" title="Permalink to this definition"></a></dt>
+<dd><p>Given the context of a <code class="docutils literal notranslate"><span class="pre">task_execution_msgs/RequestAssistanceGoal</span></code>
+return a dictionary for a <code class="docutils literal notranslate"><span class="pre">task_execution_msgs/RequestAssistanceResult</span></code>
+context that indicates <code class="xref py py-const docutils literal notranslate"><span class="pre">RequestAssistanceResult.RESUME_CONTINUE</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>goal_context</strong> (<em>dict</em>) – the goal context</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the result context</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(dict)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.recovery_strategies.RecoveryStrategies.get_final_component_context">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_final_component_context</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">goal_context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/recovery_strategies.html#RecoveryStrategies.get_final_component_context"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.recovery_strategies.RecoveryStrategies.get_final_component_context" title="Permalink to this definition"></a></dt>
+<dd><p>Get the context of the last component in the context chain</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.recovery_strategies.RecoveryStrategies.get_last_goal_location">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_last_goal_location</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">beliefs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/recovery_strategies.html#RecoveryStrategies.get_last_goal_location"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.recovery_strategies.RecoveryStrategies.get_last_goal_location" title="Permalink to this definition"></a></dt>
+<dd><p>Given a set of beliefs, check the last location that the task says the
+robot was trying to get to.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.recovery_strategies.RecoveryStrategies.get_number_of_component_aborts">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_number_of_component_aborts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">goal_context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/recovery_strategies.html#RecoveryStrategies.get_number_of_component_aborts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.recovery_strategies.RecoveryStrategies.get_number_of_component_aborts" title="Permalink to this definition"></a></dt>
+<dd><p>Given the hierarchy of tasks in the goal context, obtain a vector of the
+number of failures in each part of the component of the hierarchy. The
+first index maps to the highest level of the hierarcy and the last
+index maps to the lowest level of the hierarchy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>goal_context</strong> (<em>dict</em>) – the goal context</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>component_names (list) a list of component names from highest                     in the task hierarchy to the lowest</p></li>
+<li><p>num_aborts (list) a list of the number of times each                     component in component_names aborted</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(tuple)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.recovery_strategies.RecoveryStrategies.get_strategy">
+<span class="sig-name descname"><span class="pre">get_strategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">assistance_goal</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/recovery_strategies.html#RecoveryStrategies.get_strategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.recovery_strategies.RecoveryStrategies.get_strategy" title="Permalink to this definition"></a></dt>
+<dd><p>Given an assistance goal, generate an ExecuteGoal that can be used for
+recovery and the corresponding manner of resumption. By default, we
+return a <code class="docutils literal notranslate"><span class="pre">None</span></code> ExecuteGoal and a
+<code class="xref py py-const docutils literal notranslate"><span class="pre">RequestAssistanceResult.NONE</span></code>. The former implies that no goal
+should be executed, the latter that the task should be aborted in the
+event of a failure.</p>
+<p>In addition to task specific recoveries that are defined in the various
+<code class="docutils literal notranslate"><span class="pre">if-elif-else</span></code> conditions in this method, there are global recovery
+behaviours that apply to prevent infinite loops, for example:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>If the number of times the penultimate task in the hierarchy has                 failed is &gt; <a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies.MAX_PENULTIMATE_TASK_ABORTS" title="task_monitor.recovery_strategies.RecoveryStrategies.MAX_PENULTIMATE_TASK_ABORTS"><code class="xref py py-const docutils literal notranslate"><span class="pre">MAX_PENULTIMATE_TASK_ABORTS</span></code></a>, then the                 recovery is aborted</p></li>
+<li><p>If the number of times the main task has aborted is &gt;                 <a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies.MAX_PRIMARY_TASK_ABORTS" title="task_monitor.recovery_strategies.RecoveryStrategies.MAX_PRIMARY_TASK_ABORTS"><code class="xref py py-const docutils literal notranslate"><span class="pre">MAX_PRIMARY_TASK_ABORTS</span></code></a>, then the recovery is aborted</p></li>
+</ol>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>assistance_goal</strong> (<em>task_execution_msgs/RequestAssistanceGoal</em>) – The request for assistance. The context attribute is unpickled</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>execute_goal (<code class="docutils literal notranslate"><span class="pre">task_execution_msgs/ExecuteGoal</span></code>) a task                     goal to execute if any. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, assume there is no                     such goal</p></li>
+<li><p>resume_hint (<code class="docutils literal notranslate"><span class="pre">RequestAssistanceResult.resume_hint</span></code>) a                     constant value indicating how execution should proceed</p></li>
+<li><p>resume_context (dict) more fine grained control of the                     intended resume_hint</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(tuple)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.recovery_strategies.RecoveryStrategies.init">
+<span class="sig-name descname"><span class="pre">init</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/recovery_strategies.html#RecoveryStrategies.init"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.recovery_strategies.RecoveryStrategies.init" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.recovery_strategies.RecoveryStrategies.set_task_hint_in_context">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set_task_hint_in_context</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result_context</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resume_hint</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/recovery_strategies.html#RecoveryStrategies.set_task_hint_in_context"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.recovery_strategies.RecoveryStrategies.set_task_hint_in_context" title="Permalink to this definition"></a></dt>
+<dd><p>Given a result context dictionary, mark the desired task name with the
+desired resume hint</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>result_context</strong> (<em>dict</em>) – the result context, possibly created by
+<a class="reference internal" href="#task_monitor.recovery_strategies.RecoveryStrategies.create_continue_result_context" title="task_monitor.recovery_strategies.RecoveryStrategies.create_continue_result_context"><code class="xref py py-meth docutils literal notranslate"><span class="pre">create_continue_result_context()</span></code></a></p></li>
+<li><p><strong>task_name</strong> (<em>str</em>) – the name of the task</p></li>
+<li><p><strong>resume_hint</strong> (<em>uint8</em>) – A <code class="docutils literal notranslate"><span class="pre">task_execution_msgs/RequestAssistanceResult</span></code>                 resume_hint constant for the task’s resume hint</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a result context dictionary with the task set to the                 desired resume_hint. Note: we do not copy, so the incoming arg                 might also get affected</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(dict)</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>KeyError</strong> – if <code class="xref py py-data docutils literal notranslate"><span class="pre">task_name</span></code> is not found in the context</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-task_monitor.server">
+<span id="task-monitor-server-module"></span><h2>task_monitor.server module<a class="headerlink" href="#module-task_monitor.server" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="task_monitor.server.TaskMonitorServer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">task_monitor.server.</span></span><span class="sig-name descname"><span class="pre">TaskMonitorServer</span></span><a class="reference internal" href="_modules/task_monitor/server.html#TaskMonitorServer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.server.TaskMonitorServer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Given a request for assistance, and some TBD models, the server uses
+the logic in this class to decide whether to request help from local or from
+remote human.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.server.TaskMonitorServer.CONNECTION_CHECK_DURATION">
+<span class="sig-name descname"><span class="pre">CONNECTION_CHECK_DURATION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.5</span></em><a class="headerlink" href="#task_monitor.server.TaskMonitorServer.CONNECTION_CHECK_DURATION" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.server.TaskMonitorServer.RECOVERY_ACTION_SERVER">
+<span class="sig-name descname"><span class="pre">RECOVERY_ACTION_SERVER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'recovery_executor'</span></em><a class="headerlink" href="#task_monitor.server.TaskMonitorServer.RECOVERY_ACTION_SERVER" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="task_monitor.server.TaskMonitorServer.RECOVERY_TASKS_PARAM">
+<span class="sig-name descname"><span class="pre">RECOVERY_TASKS_PARAM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'tasks'</span></em><a class="headerlink" href="#task_monitor.server.TaskMonitorServer.RECOVERY_TASKS_PARAM" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.server.TaskMonitorServer.execute">
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">goal</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/server.html#TaskMonitorServer.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.server.TaskMonitorServer.execute" title="Permalink to this definition"></a></dt>
+<dd><p>Arbitrate an incoming request for assistance</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.server.TaskMonitorServer.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/server.html#TaskMonitorServer.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.server.TaskMonitorServer.start" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="task_monitor.server.TaskMonitorServer.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_monitor/server.html#TaskMonitorServer.stop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_monitor.server.TaskMonitorServer.stop" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="task_executor.run_task.html" class="btn btn-neutral float-left" title="run_task.py" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="task_monitor.monitors.html" class="btn btn-neutral float-right" title="task_monitor.monitors package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, RAIL.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

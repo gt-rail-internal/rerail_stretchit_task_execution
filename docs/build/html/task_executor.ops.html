@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ops &mdash; task_execution 0.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=c1dcd045"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="data" href="task_executor.data.html" />
+    <link rel="prev" title="actions" href="task_executor.actions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            task_execution
+          </a>
+              <div class="version">
+                0.0.2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="task_executor.html">task_executor package</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="task_executor.html#abstract-step">abstract_step</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_executor.html#tasks">tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_executor.html#module-task_executor.actions">actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_executor.html#module-task_executor.beliefs">beliefs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_executor.html#module-task_executor.database">database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_executor.html#module-task_executor.server">task_server</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="task_executor.html#defined-actions-ops-tasks-and-data">Defined actions, ops, tasks, and data</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="task_executor.tasks.html">tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="task_executor.actions.html">actions</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">ops</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#task_executor.ops.abort"><code class="docutils literal notranslate"><span class="pre">abort()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_executor.ops.assign"><code class="docutils literal notranslate"><span class="pre">assign()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_executor.ops.check_value"><code class="docutils literal notranslate"><span class="pre">check_value()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_executor.ops.decrement"><code class="docutils literal notranslate"><span class="pre">decrement()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_executor.ops.get_index"><code class="docutils literal notranslate"><span class="pre">get_index()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_executor.ops.increment"><code class="docutils literal notranslate"><span class="pre">increment()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_executor.ops.make_boolean"><code class="docutils literal notranslate"><span class="pre">make_boolean()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_executor.ops.negate"><code class="docutils literal notranslate"><span class="pre">negate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_executor.ops.noop"><code class="docutils literal notranslate"><span class="pre">noop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#task_executor.ops.print_var"><code class="docutils literal notranslate"><span class="pre">print_var()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="task_executor.data.html">data</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="task_executor.html#nodes">Nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="task_monitor.html">task_monitor package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">task_execution</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="task_executor.html">task_executor package</a></li>
+      <li class="breadcrumb-item active">ops</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/task_executor.ops.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ops">
+<h1>ops<a class="headerlink" href="#ops" title="Permalink to this heading"></a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When specifying the parameters for <code class="docutils literal notranslate"><span class="pre">op</span></code> in the <a class="reference internal" href="task_executor.tasks.html"><span class="doc">tasks</span></a>,
+we do not need to include the parameters <code class="docutils literal notranslate"><span class="pre">current_params</span></code> and
+<code class="docutils literal notranslate"><span class="pre">current_vars</span></code> because those parameters are automatically injected into
+the <code class="docutils literal notranslate"><span class="pre">op</span></code> function by the <a class="reference internal" href="task_executor.html#task_executor.tasks.Task" title="task_executor.tasks.Task"><code class="xref py py-class docutils literal notranslate"><span class="pre">task_executor.tasks.Task</span></code></a>. However,
+that also means that when defining a new <code class="docutils literal notranslate"><span class="pre">op</span></code> function in
+<a class="reference internal" href="#module-task_executor.ops" title="task_executor.ops"><code class="xref py py-mod docutils literal notranslate"><span class="pre">task_executor.ops</span></code></a>, we need to make sure that the function includes
+those parameters in the definition.</p>
+</div>
+<span class="target" id="module-task_executor.ops"></span><dl class="py function">
+<dt class="sig sig-object py" id="task_executor.ops.abort">
+<span class="sig-prename descclassname"><span class="pre">task_executor.ops.</span></span><span class="sig-name descname"><span class="pre">abort</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_variables</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_executor/ops.html#abort"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_executor.ops.abort" title="Permalink to this definition"></a></dt>
+<dd><p>Abort the task</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Exception</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="task_executor.ops.assign">
+<span class="sig-prename descclassname"><span class="pre">task_executor.ops.</span></span><span class="sig-name descname"><span class="pre">assign</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_variables</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_executor/ops.html#assign"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_executor.ops.assign" title="Permalink to this definition"></a></dt>
+<dd><p>Assigns the indicated <cite>value</cite> to a variable with name <cite>var_name</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>var_name</strong> (<em>str</em>) – Name of the variable to assign the value to</p></li>
+<li><p><strong>value</strong> (<em>any</em>) – Value to assign to that variable</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary with <code class="code docutils literal notranslate"><span class="pre">{</span> <span class="pre">var_name:</span> <span class="pre">value</span> <span class="pre">}</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="task_executor.ops.check_value">
+<span class="sig-prename descclassname"><span class="pre">task_executor.ops.</span></span><span class="sig-name descname"><span class="pre">check_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_variables</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_executor/ops.html#check_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_executor.ops.check_value" title="Permalink to this definition"></a></dt>
+<dd><p>Check if the value of var_name matches the one indicated, and return the
+result in check_name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>var_name</strong> (<em>str</em>) – Name of the variable to check the value of</p></li>
+<li><p><strong>value</strong> – The value to check</p></li>
+<li><p><strong>check_name</strong> (<em>str</em>) – The name of the variable containing the check result</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary with <code class="code docutils literal notranslate"><span class="pre">{</span> <span class="pre">check_name:</span> <span class="pre">var_name</span> <span class="pre">==</span> <span class="pre">value</span> <span class="pre">}</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="task_executor.ops.decrement">
+<span class="sig-prename descclassname"><span class="pre">task_executor.ops.</span></span><span class="sig-name descname"><span class="pre">decrement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_variables</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_executor/ops.html#decrement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_executor.ops.decrement" title="Permalink to this definition"></a></dt>
+<dd><p>Decrements the value of variable <cite>var_name</cite> in the <cite>current_variables</cite>. The
+value must exist and must be an integer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>var_name</strong> (<em>str</em>) – Name of the variable to decrement</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary with <code class="code docutils literal notranslate"><span class="pre">{</span> <span class="pre">var_name:</span> <span class="pre">var_name-1</span> <span class="pre">}</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="task_executor.ops.get_index">
+<span class="sig-prename descclassname"><span class="pre">task_executor.ops.</span></span><span class="sig-name descname"><span class="pre">get_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_variables</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_executor/ops.html#get_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_executor.ops.get_index" title="Permalink to this definition"></a></dt>
+<dd><p>Assuming that var_name is an indexable array / dict, return the desired idx
+from within the array</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>var_name</strong> (<em>str</em>) – Name of the variable to get the index from</p></li>
+<li><p><strong>idx_name</strong> (<em>str</em>) – Name of the output variable to contain the indexed item</p></li>
+<li><p><strong>idx</strong> (<em>int</em><em>, </em><em>str</em>) – The desired index in var_name. Can be int or str</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary with <code class="code docutils literal notranslate"><span class="pre">{</span> <span class="pre">idx_name:</span> <span class="pre">var_name[idx]</span> <span class="pre">}</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="task_executor.ops.increment">
+<span class="sig-prename descclassname"><span class="pre">task_executor.ops.</span></span><span class="sig-name descname"><span class="pre">increment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_variables</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_executor/ops.html#increment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_executor.ops.increment" title="Permalink to this definition"></a></dt>
+<dd><p>Increments the value of variable <cite>var_name</cite> in the <cite>current_variables</cite>. The
+value must exist and must be an integer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>var_name</strong> (<em>str</em>) – Name of the variable to decrement</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary with <code class="code docutils literal notranslate"><span class="pre">{</span> <span class="pre">var_name:</span> <span class="pre">var_name+1</span> <span class="pre">}</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="task_executor.ops.make_boolean">
+<span class="sig-prename descclassname"><span class="pre">task_executor.ops.</span></span><span class="sig-name descname"><span class="pre">make_boolean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_variables</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_executor/ops.html#make_boolean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_executor.ops.make_boolean" title="Permalink to this definition"></a></dt>
+<dd><p>Make the value of a variable in the current variables a boolean.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>var_name</strong> (<em>str</em>) – Name of the variable to binarize</p></li>
+<li><p><strong>bool_name</strong> (<em>str</em>) – Name of the binarized version of the variable</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary with <code class="code docutils literal notranslate"><span class="pre">{</span> <span class="pre">bool_name:</span> <span class="pre">bool(var_name)</span> <span class="pre">}</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="task_executor.ops.negate">
+<span class="sig-prename descclassname"><span class="pre">task_executor.ops.</span></span><span class="sig-name descname"><span class="pre">negate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">negate_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_variables</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_executor/ops.html#negate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_executor.ops.negate" title="Permalink to this definition"></a></dt>
+<dd><p>Negate the current value of var_name =&gt; not var_name</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>var_name</strong> (<em>str</em>) – Name of the variable to negate</p></li>
+<li><p><strong>negate_name</strong> (<em>str</em>) – Name of the variable to contain the negation</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary with <code class="code docutils literal notranslate"><span class="pre">{</span> <span class="pre">negate_name:</span> <span class="pre">not</span> <span class="pre">var_name</span> <span class="pre">}</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="task_executor.ops.noop">
+<span class="sig-prename descclassname"><span class="pre">task_executor.ops.</span></span><span class="sig-name descname"><span class="pre">noop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_variables</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_executor/ops.html#noop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_executor.ops.noop" title="Permalink to this definition"></a></dt>
+<dd><p>Does nothing</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="task_executor.ops.print_var">
+<span class="sig-prename descclassname"><span class="pre">task_executor.ops.</span></span><span class="sig-name descname"><span class="pre">print_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_variables</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/task_executor/ops.html#print_var"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#task_executor.ops.print_var" title="Permalink to this definition"></a></dt>
+<dd><p>Print the variable with var_name</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>var_name</strong> (<em>str</em>) – Name of the variable to print</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="task_executor.actions.html" class="btn btn-neutral float-left" title="actions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="task_executor.data.html" class="btn btn-neutral float-right" title="data" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, RAIL.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

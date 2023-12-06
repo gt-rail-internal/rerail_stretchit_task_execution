@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>task_monitor.server &mdash; task_execution 0.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=c1dcd045"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            task_execution
+          </a>
+              <div class="version">
+                0.0.2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../task_executor.html">task_executor package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../task_monitor.html">task_monitor package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">task_execution</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">task_monitor.server</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for task_monitor.server</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># This action server decides the arbitration method given an incoming request</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">division</span>
+
+<span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="kn">from</span> <span class="nn">threading</span> <span class="kn">import</span> <span class="n">Lock</span>
+
+<span class="kn">import</span> <span class="nn">rospy</span>
+<span class="kn">import</span> <span class="nn">actionlib</span>
+
+<span class="kn">from</span> <span class="nn">actionlib_msgs.msg</span> <span class="kn">import</span> <span class="n">GoalStatus</span>
+<span class="kn">from</span> <span class="nn">task_execution_msgs.msg</span> <span class="kn">import</span> <span class="p">(</span><span class="n">RequestAssistanceAction</span><span class="p">,</span>
+                                     <span class="n">RequestAssistanceFeedback</span><span class="p">,</span>
+                                     <span class="n">RequestAssistanceResult</span><span class="p">,</span>
+                                     <span class="n">ExecuteAction</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">task_monitor.recovery_strategies</span> <span class="kn">import</span> <span class="n">RecoveryStrategies</span>
+<span class="kn">import</span> <span class="nn">base64</span>
+
+<span class="c1"># The server arbitrates who to send the request to</span>
+
+<div class="viewcode-block" id="TaskMonitorServer"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.server.TaskMonitorServer">[docs]</a><span class="k">class</span> <span class="nc">TaskMonitorServer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a request for assistance, and some TBD models, the server uses</span>
+<span class="sd">    the logic in this class to decide whether to request help from local or from</span>
+<span class="sd">    remote human.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">RECOVERY_ACTION_SERVER</span> <span class="o">=</span> <span class="s2">&quot;recovery_executor&quot;</span>
+    <span class="n">RECOVERY_TASKS_PARAM</span> <span class="o">=</span> <span class="s2">&quot;tasks&quot;</span>  <span class="c1"># The full param is /&lt;action_server&gt;/&lt;param&gt;</span>
+
+    <span class="c1"># Parameters for the server&#39;s behaviour</span>
+    <span class="n">CONNECTION_CHECK_DURATION</span> <span class="o">=</span> <span class="mf">0.5</span>  <span class="c1"># The seconds to wait before checking for action client connection. Must be &gt; 0.1</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Create something to hold the action clients that we will be using</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_recovery_clients</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">TaskMonitorServer</span><span class="o">.</span><span class="n">RECOVERY_ACTION_SERVER</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connection_timers</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_recovery_clients_lock</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">()</span>
+
+        <span class="c1"># Initialize the lookup table of recovery modes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_recovery_strategies</span> <span class="o">=</span> <span class="n">RecoveryStrategies</span><span class="p">(</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span><span class="s2">&quot;/</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">TaskMonitorServer</span><span class="o">.</span><span class="n">RECOVERY_ACTION_SERVER</span><span class="p">,</span>
+                <span class="n">TaskMonitorServer</span><span class="o">.</span><span class="n">RECOVERY_TASKS_PARAM</span>
+            <span class="p">),</span> <span class="p">{})</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Instantiate the action server to provide the arbitration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_server</span> <span class="o">=</span> <span class="n">actionlib</span><span class="o">.</span><span class="n">SimpleActionServer</span><span class="p">(</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span>
+            <span class="n">RequestAssistanceAction</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">,</span>
+            <span class="n">auto_start</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="TaskMonitorServer.start"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.server.TaskMonitorServer.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Start the connections to the different strategies</span>
+        <span class="k">for</span> <span class="n">client_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recovery_clients</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_start_connect_to_client</span><span class="p">(</span><span class="n">client_name</span><span class="p">)</span>
+
+        <span class="c1"># Start a initialization for the recovery strategies</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_start_recovery_strategies_init</span><span class="p">()</span>
+
+        <span class="c1"># Start the monitor node itself</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Task monitor node ready...&quot;</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_start_recovery_strategies_init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">timer_callback</span><span class="p">(</span><span class="n">evt</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_recovery_strategies</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connection_timers</span><span class="p">[</span><span class="s2">&quot;_recovery_strategies_init&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Timer</span><span class="p">(</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">Duration</span><span class="p">(</span><span class="n">TaskMonitorServer</span><span class="o">.</span><span class="n">CONNECTION_CHECK_DURATION</span><span class="p">),</span>
+            <span class="n">timer_callback</span><span class="p">,</span>
+            <span class="n">oneshot</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_start_connect_to_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client_name</span><span class="p">):</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Connecting to </span><span class="si">{}</span><span class="s2">...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">client_name</span><span class="p">))</span>
+
+        <span class="c1"># Create an action client</span>
+        <span class="n">recovery_client</span> <span class="o">=</span> <span class="n">actionlib</span><span class="o">.</span><span class="n">SimpleActionClient</span><span class="p">(</span><span class="n">client_name</span><span class="p">,</span> <span class="n">ExecuteAction</span><span class="p">)</span>
+
+        <span class="c1"># Start the periodic checks to see if the client has connected</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connection_timers</span><span class="p">[</span><span class="n">client_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Timer</span><span class="p">(</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">Duration</span><span class="p">(</span><span class="n">TaskMonitorServer</span><span class="o">.</span><span class="n">CONNECTION_CHECK_DURATION</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_client_connection</span><span class="p">(</span><span class="n">client_name</span><span class="p">,</span> <span class="n">recovery_client</span><span class="p">),</span>
+            <span class="n">oneshot</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_client_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client_name</span><span class="p">,</span> <span class="n">recovery_client</span><span class="p">):</span>
+        <span class="c1"># Create a callback that will be executed for the connection check</span>
+        <span class="k">def</span> <span class="nf">timer_callback</span><span class="p">(</span><span class="n">evt</span><span class="p">):</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">logdebug</span><span class="p">(</span><span class="s2">&quot;...checking connection to </span><span class="si">{}</span><span class="s2">...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">client_name</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">recovery_client</span><span class="o">.</span><span class="n">wait_for_server</span><span class="p">(</span><span class="n">rospy</span><span class="o">.</span><span class="n">Duration</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)):</span>
+                <span class="c1"># Stop the timer from firing</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_connection_timers</span><span class="p">[</span><span class="n">client_name</span><span class="p">]</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+
+                <span class="c1"># Set the strategy client</span>
+                <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recovery_clients_lock</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_recovery_clients</span><span class="p">[</span><span class="n">client_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">recovery_client</span>
+
+                <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;...</span><span class="si">{}</span><span class="s2"> connected&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">client_name</span><span class="p">))</span>
+
+        <span class="c1"># Return this callback</span>
+        <span class="k">return</span> <span class="n">timer_callback</span>
+
+<div class="viewcode-block" id="TaskMonitorServer.execute"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.server.TaskMonitorServer.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">goal</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Arbitrate an incoming request for assistance&quot;&quot;&quot;</span>
+        <span class="n">request_received</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+
+        <span class="c1"># Pick the strategy</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">ABORTED</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">get_default_result</span><span class="p">()</span>
+        <span class="n">client_name</span><span class="p">,</span> <span class="n">recovery_client</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recovery_clients_lock</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">client</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recovery_clients</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">client</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">client_name</span><span class="p">,</span> <span class="n">recovery_client</span> <span class="o">=</span> <span class="n">name</span><span class="p">,</span> <span class="n">client</span>
+                    <span class="k">break</span>
+        <span class="c1"># If we do have a valid strategy</span>
+        <span class="k">if</span> <span class="n">recovery_client</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Unpickle the context</span>
+            <span class="n">goal</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">context</span><span class="p">))</span>
+
+            <span class="c1"># Figure out the execution goal and resume hints</span>
+            <span class="n">execute_goal</span><span class="p">,</span> <span class="n">resume_hint</span><span class="p">,</span> <span class="n">resume_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recovery_strategies</span><span class="o">.</span><span class="n">get_strategy</span><span class="p">(</span><span class="n">goal</span><span class="p">)</span>
+            <span class="n">execute_status</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">GoalStatus</span><span class="o">.</span><span class="n">SUCCEEDED</span>
+                <span class="k">if</span> <span class="n">execute_goal</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">resume_hint</span> <span class="o">!=</span> <span class="n">RequestAssistanceResult</span><span class="o">.</span><span class="n">RESUME_NONE</span>
+                <span class="k">else</span> <span class="n">status</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">execute_goal</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Publish some feedback</span>
+                <span class="n">feedback</span> <span class="o">=</span> <span class="n">RequestAssistanceFeedback</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="n">execute_goal</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">publish_feedback</span><span class="p">(</span><span class="n">feedback</span><span class="p">)</span>
+
+                <span class="c1"># Send the execute to the recovery client. Preempt if a preempt</span>
+                <span class="c1"># request has also appeared</span>
+                <span class="n">recovery_client</span><span class="o">.</span><span class="n">send_goal</span><span class="p">(</span><span class="n">execute_goal</span><span class="p">)</span>
+                <span class="k">while</span> <span class="ow">not</span> <span class="n">recovery_client</span><span class="o">.</span><span class="n">wait_for_result</span><span class="p">(</span><span class="n">rospy</span><span class="o">.</span><span class="n">Duration</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">is_preempt_requested</span><span class="p">():</span>
+                        <span class="n">recovery_client</span><span class="o">.</span><span class="n">cancel_goal</span><span class="p">()</span>
+
+                <span class="c1"># Update the result</span>
+                <span class="n">execute_status</span> <span class="o">=</span> <span class="n">recovery_client</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
+                <span class="n">execute_result</span> <span class="o">=</span> <span class="n">recovery_client</span><span class="o">.</span><span class="n">get_result</span><span class="p">()</span>
+
+                <span class="c1"># If the result status is anything other than a success, then</span>
+                <span class="c1"># resume none. Else, send out the hint that we meant to</span>
+                <span class="k">if</span> <span class="n">execute_status</span> <span class="o">!=</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">SUCCEEDED</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">execute_result</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
+                    <span class="n">resume_hint</span> <span class="o">=</span> <span class="n">RequestAssistanceResult</span><span class="o">.</span><span class="n">RESUME_NONE</span>
+                    <span class="n">resume_context</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;resume_hint&#39;</span><span class="p">:</span> <span class="n">resume_hint</span><span class="p">}</span>
+
+            <span class="c1"># Set the result fields</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">execute_status</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">resume_hint</span> <span class="o">=</span> <span class="n">resume_hint</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">resume_context</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">request_complete</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Otherwise, we are aborting the request and sending it back</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">resume_hint</span> <span class="o">=</span> <span class="n">RequestAssistanceResult</span><span class="o">.</span><span class="n">RESUME_NONE</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">goal</span><span class="o">.</span><span class="n">context</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">request_complete</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+
+        <span class="c1"># Some extra processing of all results, in case it is needed</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">request_received</span> <span class="o">=</span> <span class="n">request_received</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="c1"># Return based on status</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">SUCCEEDED</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">set_succeeded</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">PREEMPTED</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">is_preempt_requested</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">set_preempted</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># Usually, GoalStatus.ABORTED</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">set_aborted</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TaskMonitorServer.stop"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.server.TaskMonitorServer.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, RAIL.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

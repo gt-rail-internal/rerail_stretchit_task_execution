@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>task_executor.server &mdash; task_execution 0.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=c1dcd045"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            task_execution
+          </a>
+              <div class="version">
+                0.0.2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../task_executor.html">task_executor package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../task_monitor.html">task_monitor package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">task_execution</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">task_executor.server</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for task_executor.server</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># An action server to execute a task plan.</span>
+
+<span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="kn">import</span> <span class="nn">rospy</span>
+<span class="kn">import</span> <span class="nn">actionlib</span>
+<span class="kn">import</span> <span class="nn">base64</span>
+
+<span class="c1">#from task_executor.abstract_step import AbstractStep</span>
+<span class="kn">from</span> <span class="nn">task_executor.actions</span> <span class="kn">import</span> <span class="n">get_default_actions</span>
+<span class="kn">from</span> <span class="nn">task_executor.tasks</span> <span class="kn">import</span> <span class="n">Task</span><span class="p">,</span> <span class="n">TaskContext</span>
+
+<span class="kn">from</span> <span class="nn">actionlib_msgs.msg</span> <span class="kn">import</span> <span class="n">GoalID</span><span class="p">,</span> <span class="n">GoalStatus</span>
+<span class="kn">from</span> <span class="nn">task_execution_msgs.msg</span> <span class="kn">import</span> <span class="p">(</span><span class="n">ExecuteAction</span><span class="p">,</span> <span class="n">RequestAssistanceAction</span><span class="p">,</span> <span class="n">RequestAssistanceGoal</span><span class="p">,</span> <span class="n">RequestAssistanceResult</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">std_srvs.srv</span> <span class="kn">import</span> <span class="n">Trigger</span><span class="p">,</span> <span class="n">TriggerResponse</span>
+
+
+<span class="c1"># Helper function for debugging</span>
+
+
+<span class="c1"># The actual action server to execute the tasks</span>
+
+<div class="viewcode-block" id="TaskServer"><a class="viewcode-back" href="../../task_executor.html#task_executor.server.TaskServer">[docs]</a><span class="k">class</span> <span class="nc">TaskServer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Exposes a :class:`actionlib.SimpleActionServer` in order to execute defined</span>
+<span class="sd">    :class:`task_executor.tasks.Task` instances.</span>
+
+<span class="sd">    Given the task to perform, this server yields control, at each step to,</span>
+<span class="sd">    sub-clients. When the clients are done, it moves on to the next step. If the</span>
+<span class="sd">    task fails, the server sends context to a task monitor. The monitor yields</span>
+<span class="sd">    control to a recovery executor, which then returns a signal back up the</span>
+<span class="sd">    stack to this server with hints on how execution should proceed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">TASK_MONITOR_ACTION_SERVER</span> <span class="o">=</span> <span class="s2">&quot;task_monitor&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">actions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">connect_monitor</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="c1"># Instantiate the action clients</span>
+        <span class="k">if</span> <span class="n">actions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">actions</span> <span class="o">=</span> <span class="n">get_default_actions</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">actions</span> <span class="o">=</span> <span class="n">actions</span>
+
+        <span class="c1"># Provide a service to reload, and then reload</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reload_service</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Service</span><span class="p">(</span><span class="s1">&#39;~reload&#39;</span><span class="p">,</span> <span class="n">Trigger</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">reload</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="c1">#Connect to the arbitrator only if needed</span>
+        <span class="k">if</span> <span class="n">connect_monitor</span><span class="p">:</span>
+            <span class="c1"># Instantiate a connection to the arbitration server</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_client</span> <span class="o">=</span> <span class="n">actionlib</span><span class="o">.</span><span class="n">SimpleActionClient</span><span class="p">(</span>
+                <span class="n">TaskServer</span><span class="o">.</span><span class="n">TASK_MONITOR_ACTION_SERVER</span><span class="p">,</span>
+                <span class="n">RequestAssistanceAction</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_client</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Instantiate the action server</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_server</span> <span class="o">=</span> <span class="n">actionlib</span><span class="o">.</span><span class="n">SimpleActionServer</span><span class="p">(</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span>
+            <span class="n">ExecuteAction</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">,</span>
+            <span class="n">auto_start</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="TaskServer.start"><a class="viewcode-back" href="../../task_executor.html#task_executor.server.TaskServer.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_client</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Connecting to assistance arbitrator...&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_client</span><span class="o">.</span><span class="n">wait_for_server</span><span class="p">()</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;...assistance arbitrator connected&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Executor node ready...&quot;</span><span class="p">)</span></div>
+        <span class="c1"># self.actions.beep(beep=SoundClient.BEEP_PROUD)</span>
+
+<div class="viewcode-block" id="TaskServer.reload"><a class="viewcode-back" href="../../task_executor.html#task_executor.server.TaskServer.reload">[docs]</a>    <span class="k">def</span> <span class="nf">reload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">req</span><span class="p">):</span>
+        <span class="c1"># Get the task configs</span>
+        <span class="n">tasks_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_tasks</span><span class="p">(</span><span class="n">rospy</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span><span class="s1">&#39;~tasks&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">{</span> <span class="n">key</span><span class="p">:</span> <span class="n">Task</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">tasks_config</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="p">}</span>
+
+        <span class="c1"># Instantiate the registry of actions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+
+        <span class="c1"># Instantiate the registry of tasks</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">task</span><span class="o">.</span><span class="n">init</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+                <span class="n">tasks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span>
+                <span class="n">actions</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">tasks_config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">TriggerResponse</span><span class="p">(</span><span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TaskServer.execute"><a class="viewcode-back" href="../../task_executor.html#task_executor.server.TaskServer.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">goal</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The callback for a goal sent to the action server.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            goal (task_execution_msgs/ExecuteGoal) : The task to execute</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">get_default_result</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">goal</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">logerr</span><span class="p">(</span><span class="s2">&quot;Task </span><span class="si">{}</span><span class="s2">: UNRECOGNIZED.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">set_aborted</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Fetch the params from the goal</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">params</span><span class="p">))</span><span class="k">if</span> <span class="n">goal</span><span class="o">.</span><span class="n">params</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span> <span class="k">else</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">logerr</span><span class="p">(</span><span class="s2">&quot;Task </span><span class="si">{}</span><span class="s2">: UNRECOGNIZED params - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">params</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">set_aborted</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Prepare the task. Main tasks cannot take parameters or return values</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="n">goal</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">task</span><span class="o">.</span><span class="n">set_running</span><span class="p">()</span>
+        <span class="n">variables</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">execution_context</span> <span class="o">=</span> <span class="n">TaskContext</span><span class="p">()</span>
+        <span class="n">request_assistance</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Execute the task unless we have been told not to seek assistance or</span>
+        <span class="c1"># unless the underlying task has been preempted.</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">task</span><span class="o">.</span><span class="n">is_succeeded</span><span class="p">()</span> <span class="ow">and</span> <span class="n">request_assistance</span><span class="p">:</span>
+            <span class="c1"># The task execution portion of the while loop</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Task </span><span class="si">{}</span><span class="s2">: EXECUTING.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                <span class="n">request_assistance</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># We don&#39;t want to request</span>
+                                            <span class="c1"># assistance until there&#39;s an error</span>
+                <span class="k">for</span> <span class="n">variables</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">execution_context</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+                    <span class="c1"># First check to see if we&#39;ve been preempted. If we have, then</span>
+                    <span class="c1"># set the preempt flag and wait for the task to return</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">is_preempt_requested</span><span class="p">()</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">is_active</span><span class="p">():</span>
+                        <span class="n">task</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+                        <span class="k">continue</span>
+
+                    <span class="c1"># Check to see if something has stopped the task. If so, then</span>
+                    <span class="c1"># exit out of this for loop</span>
+                    <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">is_preempted</span><span class="p">()</span> <span class="ow">or</span> <span class="n">task</span><span class="o">.</span><span class="n">is_aborted</span><span class="p">():</span>
+                        <span class="k">break</span>
+
+                    <span class="c1"># Sleep for a bit so that task is not pegging the CPU</span>
+                    <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+
+                <span class="c1"># If the task has been preempted, then stop executing it</span>
+                <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">is_preempted</span><span class="p">():</span>
+                    <span class="n">rospy</span><span class="o">.</span><span class="n">logwarn</span><span class="p">(</span><span class="s2">&quot;Task </span><span class="si">{}</span><span class="s2">: PREEMPTED. Context: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">Task</span><span class="o">.</span><span class="n">pprint_variables</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span>
+                    <span class="p">))</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">variables</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">variables</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">set_preempted</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+                    <span class="k">return</span>
+
+                <span class="c1"># If the task has failed, request assistance and resume based</span>
+                <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">is_aborted</span><span class="p">():</span>
+                    <span class="n">rospy</span><span class="o">.</span><span class="n">logerr</span><span class="p">(</span><span class="s2">&quot;Task </span><span class="si">{}</span><span class="s2">: FAIL. Context: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">Task</span><span class="o">.</span><span class="n">pprint_variables</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span>
+                    <span class="p">))</span>
+                    <span class="n">request_assistance</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="c1"># There was some unexpected error in the underlying code.</span>
+                <span class="c1"># Capture it and send it to the recovery mechanism.</span>
+                <span class="n">rospy</span><span class="o">.</span><span class="n">logerr</span><span class="p">(</span><span class="s2">&quot;Exception in task execution: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">notify_aborted</span><span class="p">()</span>
+                <span class="n">variables</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get_executor_context</span><span class="p">()</span>
+                <span class="n">variables</span><span class="p">[</span><span class="s1">&#39;exception&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">e</span>
+                <span class="n">request_assistance</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="c1"># If the task is about to fail, print out the context of the failure</span>
+            <span class="c1"># for debugging purposes</span>
+            <span class="c1">#this will never execute</span>
+            <span class="k">if</span> <span class="n">request_assistance</span><span class="p">:</span>
+                <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span>
+                    <span class="s2">&quot;Task </span><span class="si">{name}</span><span class="s2">: Will require assistance. Component: </span><span class="si">{executor.name}</span><span class="s2">, Aborts: </span><span class="si">{executor.num_aborts}</span><span class="s2">&quot;</span>
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">name</span><span class="o">=</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                        <span class="n">executor</span><span class="o">=</span><span class="n">task</span><span class="o">.</span><span class="n">get_executor</span><span class="p">()</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="c1"># The value of request assistance depends on the arbitration client</span>
+            <span class="k">if</span> <span class="n">request_assistance</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_monitor_client</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">goal</span><span class="o">.</span><span class="n">no_recoveries</span><span class="p">):</span>
+                <span class="n">request_assistance</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="c1"># The request assistance portion of the while loop</span>
+            <span class="k">if</span> <span class="n">request_assistance</span><span class="p">:</span>
+                <span class="c1"># Create the assistance goal</span>
+                <span class="n">assistance_goal</span> <span class="o">=</span> <span class="n">RequestAssistanceGoal</span><span class="p">(</span><span class="n">stamp</span><span class="o">=</span><span class="n">rospy</span><span class="o">.</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">())</span>
+                <span class="n">executor</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get_executor</span><span class="p">()</span>
+                <span class="n">assistance_goal</span><span class="o">.</span><span class="n">component</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">name</span>
+                <span class="n">assistance_goal</span><span class="o">.</span><span class="n">component_status</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">status</span>
+                <span class="n">assistance_goal</span><span class="o">.</span><span class="n">priority</span> <span class="o">=</span> <span class="n">RequestAssistanceGoal</span><span class="o">.</span><span class="n">PRIORITY_NORMAL</span>
+                <span class="n">assistance_goal</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">variables</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
+
+                <span class="c1"># Send the goal and wait. Preempt if a preempt request has also</span>
+                <span class="c1"># appeared</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_client</span><span class="o">.</span><span class="n">send_goal</span><span class="p">(</span><span class="n">assistance_goal</span><span class="p">)</span>
+                <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_client</span><span class="o">.</span><span class="n">wait_for_result</span><span class="p">(</span><span class="n">rospy</span><span class="o">.</span><span class="n">Duration</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">is_preempt_requested</span><span class="p">():</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_client</span><span class="o">.</span><span class="n">cancel_goal</span><span class="p">()</span>
+
+                <span class="c1"># Get the result from the arbitration server and proceed</span>
+                <span class="c1"># accordingly</span>
+                <span class="n">assist_status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_client</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
+                <span class="n">assist_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_client</span><span class="o">.</span><span class="n">get_result</span><span class="p">()</span>
+
+                <span class="k">if</span> <span class="n">assist_status</span> <span class="o">==</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">PREEMPTED</span><span class="p">:</span>
+                    <span class="n">rospy</span><span class="o">.</span><span class="n">logwarn</span><span class="p">(</span><span class="s2">&quot;Assistance request PREEMPTED. Exiting.&quot;</span><span class="p">)</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">variables</span> <span class="o">=</span> <span class="n">assist_result</span><span class="o">.</span><span class="n">context</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">set_preempted</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+                    <span class="k">return</span>
+                <span class="k">elif</span> <span class="n">assist_status</span> <span class="o">!=</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">SUCCEEDED</span><span class="p">:</span>  <span class="c1"># Most likely ABORTED</span>
+                    <span class="n">rospy</span><span class="o">.</span><span class="n">logerr</span><span class="p">(</span><span class="s2">&quot;Assistance request ABORTED. Exiting.&quot;</span><span class="p">)</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">variables</span> <span class="o">=</span> <span class="n">assist_result</span><span class="o">.</span><span class="n">context</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">set_aborted</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+                    <span class="k">return</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># GoalStatus.SUCCEEDED</span>
+                    <span class="c1"># Assert that the resume hint in the context matches the</span>
+                    <span class="c1"># resume_hint in the message. We assume that the monitor</span>
+                    <span class="c1"># must set the new context, so an invalid unpickling error</span>
+                    <span class="c1"># because of unset context is a valid error</span>
+                    <span class="n">assist_result</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">assist_result</span><span class="o">.</span><span class="n">context</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+                        <span class="n">assist_result</span><span class="o">.</span><span class="n">resume_hint</span> <span class="o">==</span> <span class="n">assist_result</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s1">&#39;resume_hint&#39;</span><span class="p">]</span>
+                        <span class="ow">or</span> <span class="p">(</span><span class="n">assist_result</span><span class="o">.</span><span class="n">resume_hint</span> <span class="ow">in</span> <span class="p">[</span><span class="n">RequestAssistanceResult</span><span class="o">.</span><span class="n">RESUME_NEXT</span><span class="p">,</span>
+                                                          <span class="n">RequestAssistanceResult</span><span class="o">.</span><span class="n">RESUME_PREVIOUS</span><span class="p">]</span>
+                            <span class="ow">and</span> <span class="n">assist_result</span><span class="p">[</span><span class="s1">&#39;resume_hint&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">RequestAssistanceResult</span><span class="o">.</span><span class="n">RESUME_CONTINUE</span><span class="p">)</span>
+                    <span class="p">):</span>
+                        <span class="n">rospy</span><span class="o">.</span><span class="n">logerr</span><span class="p">(</span><span class="s2">&quot;Task </span><span class="si">{}</span><span class="s2">: message hint of </span><span class="si">{}</span><span class="s2"> does not match context hint of </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                            <span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                            <span class="n">assist_result</span><span class="o">.</span><span class="n">resume_hint</span><span class="p">,</span>
+                            <span class="n">assist_result</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s1">&#39;resume_hint&#39;</span><span class="p">]</span>
+                        <span class="p">))</span>
+                        <span class="n">task</span><span class="o">.</span><span class="n">set_aborted</span><span class="p">(</span><span class="o">**</span><span class="n">assist_result</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+                        <span class="k">break</span>
+
+                    <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Assistance request COMPLETED. Resume Hint: </span><span class="si">{}</span><span class="s2">&quot;</span>
+                                  <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">assist_result</span><span class="o">.</span><span class="n">resume_hint</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="n">assist_result</span><span class="o">.</span><span class="n">resume_hint</span> <span class="o">!=</span> <span class="n">RequestAssistanceResult</span><span class="o">.</span><span class="n">RESUME_NONE</span><span class="p">:</span>
+                        <span class="c1"># Figure out the execution context of subtasks from the</span>
+                        <span class="c1"># context dictionary that&#39;s returned</span>
+                        <span class="n">execution_context</span> <span class="o">=</span> <span class="n">TaskContext</span><span class="o">.</span><span class="n">create_from_dict</span><span class="p">(</span><span class="n">assist_result</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>  <span class="c1"># RequestAssistanceResult.RESUME_NONE</span>
+                        <span class="c1"># Just prepare to exit</span>
+                        <span class="n">request_assistance</span> <span class="o">=</span> <span class="kc">False</span>
+                        <span class="n">variables</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">set_aborted</span><span class="p">(</span><span class="o">**</span><span class="n">assist_result</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+
+            <span class="c1"># End while</span>
+
+        <span class="c1"># Check to see if the task aborted</span>
+        <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">is_aborted</span><span class="p">():</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">logerr</span><span class="p">(</span><span class="s2">&quot;Task </span><span class="si">{}</span><span class="s2">: FAIL. Context: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">Task</span><span class="o">.</span><span class="n">pprint_variables</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span>
+            <span class="p">))</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">variables</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">variables</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">set_aborted</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Otherwise, signal complete</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">success</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">variables</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">variables</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Task </span><span class="si">{}</span><span class="s2">: SUCCESS.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_server</span><span class="o">.</span><span class="n">set_succeeded</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TaskServer.stop"><a class="viewcode-back" href="../../task_executor.html#task_executor.server.TaskServer.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Cancel all current goals</span>
+        <span class="n">cancel_pub</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Publisher</span><span class="p">(</span><span class="n">rospy</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39;/cancel&#39;</span><span class="p">,</span> <span class="n">GoalID</span><span class="p">)</span>
+        <span class="n">cancel_pub</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">GoalID</span><span class="p">(</span><span class="n">stamp</span><span class="o">=</span><span class="n">rospy</span><span class="o">.</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">()))</span>
+
+        <span class="c1"># Wait a bit</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_validate_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tasks</span><span class="p">):</span>
+        <span class="c1"># We don&#39;t need to validate yet. But perhaps soon</span>
+        <span class="k">return</span> <span class="n">tasks</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, RAIL.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>task_monitor.execution_tracer &mdash; task_execution 0.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=c1dcd045"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            task_execution
+          </a>
+              <div class="version">
+                0.0.2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../task_executor.html">task_executor package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../task_monitor.html">task_monitor package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">task_execution</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">task_monitor.execution_tracer</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for task_monitor.execution_tracer</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Monitor and process the execution trace</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">division</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">ruamel.yaml</span> <span class="kn">import</span> <span class="n">YAML</span>
+
+<span class="kn">import</span> <span class="nn">rospy</span>
+<span class="kn">import</span> <span class="nn">rospkg</span>
+
+<span class="kn">from</span> <span class="nn">actionlib_msgs.msg</span> <span class="kn">import</span> <span class="n">GoalStatus</span>
+<span class="kn">from</span> <span class="nn">task_execution_msgs.msg</span> <span class="kn">import</span> <span class="p">(</span><span class="n">ExecutionEvent</span><span class="p">,</span> <span class="n">TaskStepMetadata</span><span class="p">,</span>
+                                     <span class="n">MonitorMetadata</span><span class="p">,</span> <span class="n">BeliefMetadata</span><span class="p">,</span>
+                                     <span class="n">BeliefKeys</span><span class="p">)</span>
+
+
+
+<span class="c1"># Helper functions and classes</span>
+
+<span class="n">yaml</span> <span class="o">=</span> <span class="n">YAML</span><span class="p">(</span><span class="n">typ</span><span class="o">=</span><span class="s1">&#39;safe&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="classproperty"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.execution_tracer.classproperty">[docs]</a><span class="k">class</span> <span class="nc">classproperty</span><span class="p">(</span><span class="nb">property</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">owner</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">classmethod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fget</span><span class="p">)</span><span class="o">.</span><span class="fm">__get__</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">owner</span><span class="p">)()</span></div>
+
+
+<div class="viewcode-block" id="get_event_name"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.execution_tracer.get_event_name">[docs]</a><span class="k">def</span> <span class="nf">get_event_name</span><span class="p">(</span><span class="n">event_signature</span><span class="p">):</span>
+    <span class="n">signatures</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">TASK_STEP_EVENT</span><span class="p">:</span> <span class="s1">&#39;TASK_STEP&#39;</span><span class="p">,</span>
+        <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">ROSGRAPH_EVENT</span><span class="p">:</span> <span class="s1">&#39;ROSGRAPH&#39;</span><span class="p">,</span>
+        <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">MONITOR_EVENT</span><span class="p">:</span> <span class="s1">&#39;MONITOR&#39;</span><span class="p">,</span>
+        <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">BELIEF_EVENT</span><span class="p">:</span> <span class="s1">&#39;BELIEF&#39;</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">signatures</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">event_signature</span><span class="p">,</span> <span class="n">event_signature</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="discretize_task_step_status"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.execution_tracer.discretize_task_step_status">[docs]</a><span class="k">def</span> <span class="nf">discretize_task_step_status</span><span class="p">(</span><span class="n">status</span><span class="p">):</span>
+    <span class="n">statuses</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">GoalStatus</span><span class="o">.</span><span class="n">ACTIVE</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">GoalStatus</span><span class="o">.</span><span class="n">SUCCEEDED</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">GoalStatus</span><span class="o">.</span><span class="n">ABORTED</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">statuses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span></div>
+
+
+<span class="c1"># The tracer object that collects the trace</span>
+
+<div class="viewcode-block" id="Tracer"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.execution_tracer.Tracer">[docs]</a><span class="k">class</span> <span class="nc">Tracer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class monitors the execution trace messages and compiles the data into</span>
+<span class="sd">    a events trace stream</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">EXECUTION_TRACE_TOPIC</span> <span class="o">=</span> <span class="s1">&#39;/execution_monitor/trace&#39;</span>
+    <span class="n">MAX_TRACE_LENGTH</span> <span class="o">=</span> <span class="mi">9999</span>
+
+    <span class="c1"># Stub event type definition</span>
+    <span class="n">TIME_EVENT</span> <span class="o">=</span> <span class="mi">255</span>
+
+    <span class="c1"># Events to ignore</span>
+    <span class="n">EXCLUDE_BELIEF_EVENTS</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([])</span>
+    <span class="n">EXCLUDE_MONITOR_EVENTS</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span>
+        <span class="s1">&#39;diagnostics_update: Charger&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: Gripper IMU Accelerometer&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: Gripper IMU Gyro&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: IMU 1 Accelerometer&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: IMU 1 Gyro&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: Mainboard&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: battery_breaker&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: computer_breaker&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: elbow_flex_mcb&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: forearm_roll_mcb&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: gripper_board_mcb&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: head_pan_mcb&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: head_tilt_mcb&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: joy: Joystick Driver Status&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: joy_node: Joystick Driver Status&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: l_wheel_mcb&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: r_wheel_mcb&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: shoulder_lift_mcb&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: shoulder_pan_mcb&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: sick_tim551_2050001: /base_scan_raw topic status&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: sound_play: Node State&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: supply_breaker&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: torso_lift_mcb&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: upperarm_roll_mcb&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: velodyne_link_nodelet_manager: velodyne_packets topic status&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: wrist_flex_mcb&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: wrist_roll_mcb&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;task_action_recv_result&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;task_action_send_goal&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;task_action_cancel&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;task_service_called&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;task_topic_message&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;task_topic_published&#39;</span><span class="p">,</span>
+    <span class="p">])</span>
+    <span class="n">EXCLUDE_TASK_STEP_EVENTS</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([])</span>
+
+    <span class="c1"># Events to include. These are a list because they need to be ordered</span>
+    <span class="n">INCLUDE_BELIEF_EVENTS</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">INCLUDE_MONITOR_EVENTS</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s1">&#39;arm_contact_update&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;base_collision_update&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;base_stall_update&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;battery_state_update&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;breaker_state_update&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;costmap_update&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: arm_breaker&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: base_breaker&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: gripper_breaker&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;diagnostics_update: point_cloud_diagnostic: delay&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;global_plan_collision_update&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;localization_update&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;look_direction_update&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;moveit_update: motion plan failure&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;moveit_update: invalid motion plan&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;moveit_update: environment changed&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;moveit_update: controller failed&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;moveit_update: other failure&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;segmentation_update&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;wifi_update&#39;</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="n">INCLUDE_TASK_STEP_EVENTS</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">UNKNOWN_TASK_NAME</span> <span class="o">=</span> <span class="s1">&#39;&lt;unknown&gt;&#39;</span>
+    <span class="n">DEFAULT_TASK_DEFINITIONS_FILE</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="n">rospkg</span><span class="o">.</span><span class="n">RosPack</span><span class="p">()</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">&#39;task_executor&#39;</span><span class="p">),</span>
+        <span class="s1">&#39;config&#39;</span><span class="p">,</span> <span class="s1">&#39;tasks.yaml&#39;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Flags for generating and operating on the vector of trace types</span>
+    <span class="n">AUTO_INCLUDE_BELIEF_EVENTS</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">AUTO_INCLUDE_TASK_EVENTS</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">INCLUDE_UNKNOWN_TASK_EVENTS</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="c1"># This is a vector, used to index into rows</span>
+    <span class="n">_trace_types</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_trace_types_idx</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_time</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">start_time</span> <span class="ow">or</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+
+        <span class="c1"># Book-keeping variables to keep track of the trace state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">full_trace</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="n">Tracer</span><span class="o">.</span><span class="n">MAX_TRACE_LENGTH</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trace</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">Tracer</span><span class="o">.</span><span class="n">trace_types</span><span class="p">),</span> <span class="n">Tracer</span><span class="o">.</span><span class="n">MAX_TRACE_LENGTH</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_should_trace</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Variable that determines whether to trace</span>
+
+        <span class="c1"># Book-keeping variables to help with the trace parsing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks_to_reset</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="c1"># Initialize the trace</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_trace</span><span class="p">(</span><span class="n">start_time</span><span class="p">)</span>
+
+        <span class="c1"># Setup the subscriber to track the trace</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trace_sub</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span>
+            <span class="n">Tracer</span><span class="o">.</span><span class="n">EXECUTION_TRACE_TOPIC</span><span class="p">,</span>
+            <span class="n">ExecutionEvent</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_trace</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classproperty</span>
+    <span class="k">def</span> <span class="nf">trace_types</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_trace_types</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Auto generate the belief events if the flag is set</span>
+            <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">AUTO_INCLUDE_BELIEF_EVENTS</span><span class="p">:</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="n">INCLUDE_BELIEF_EVENTS</span> <span class="o">+=</span> <span class="p">[</span>
+                    <span class="nb">getattr</span><span class="p">(</span><span class="n">BeliefKeys</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">dir</span><span class="p">(</span><span class="n">BeliefKeys</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="n">x</span><span class="o">.</span><span class="n">isupper</span><span class="p">()</span>
+                        <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">BeliefKeys</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">EXCLUDE_BELIEF_EVENTS</span>
+                        <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">BeliefKeys</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">INCLUDE_BELIEF_EVENTS</span>
+                    <span class="p">)</span>
+                <span class="p">]</span>
+
+            <span class="c1"># Auto generate task events if the flag is set</span>
+            <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">AUTO_INCLUDE_TASK_EVENTS</span><span class="p">:</span>
+
+                <span class="c1"># First fetch all the defined actions</span>
+                <span class="kn">from</span> <span class="nn">task_executor.src.task_executor.actions</span> <span class="kn">import</span> <span class="n">default_actions_dict</span>
+                <span class="n">actions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">default_actions_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="k">del</span> <span class="n">default_actions_dict</span>
+
+                <span class="c1"># Then fetch all the defined tasks</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">Tracer</span><span class="o">.</span><span class="n">DEFAULT_TASK_DEFINITIONS_FILE</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fd</span><span class="p">:</span>
+                    <span class="n">definitions</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+                    <span class="n">tasks</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">definitions</span><span class="p">[</span><span class="s1">&#39;tasks&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+                <span class="c1"># Finally, create the list of events to include</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="n">INCLUDE_TASK_STEP_EVENTS</span> <span class="o">+=</span> <span class="p">[</span>
+                    <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">actions</span> <span class="o">+</span> <span class="n">tasks</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">EXCLUDE_TASK_STEP_EVENTS</span> <span class="ow">and</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">INCLUDE_TASK_STEP_EVENTS</span><span class="p">)</span>
+                <span class="p">]</span>
+
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_trace_types</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="p">[(</span><span class="n">Tracer</span><span class="o">.</span><span class="n">TIME_EVENT</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">)]</span>
+                <span class="o">+</span> <span class="p">[(</span><span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">BELIEF_EVENT</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">INCLUDE_BELIEF_EVENTS</span><span class="p">]</span>
+                <span class="o">+</span> <span class="p">[(</span><span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">MONITOR_EVENT</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">INCLUDE_MONITOR_EVENTS</span><span class="p">]</span>
+                <span class="o">+</span> <span class="p">[(</span><span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">TASK_STEP_EVENT</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">INCLUDE_TASK_STEP_EVENTS</span><span class="p">]</span>
+            <span class="p">)</span>
+
+            <span class="c1"># If unknown task events should be included (which includes the</span>
+            <span class="c1"># excluded events), then create a placeholder for them</span>
+            <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">INCLUDE_UNKNOWN_TASK_EVENTS</span><span class="p">:</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="n">_trace_types</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">TASK_STEP_EVENT</span><span class="p">,</span> <span class="n">Tracer</span><span class="o">.</span><span class="n">UNKNOWN_TASK_NAME</span><span class="p">)</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_trace_types</span>
+
+    <span class="nd">@classproperty</span>
+    <span class="k">def</span> <span class="nf">trace_types_idx</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_trace_types_idx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_trace_types_idx</span> <span class="o">=</span> <span class="p">{</span> <span class="n">x</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">Tracer</span><span class="o">.</span><span class="n">trace_types</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_trace_types_idx</span>
+
+<div class="viewcode-block" id="Tracer.trace_idx_by_type"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.execution_tracer.Tracer.trace_idx_by_type">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">trace_idx_by_type</span><span class="p">(</span><span class="n">trace_type</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">trace_type</span> <span class="o">==</span> <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">BELIEF_EVENT</span><span class="p">:</span>
+            <span class="n">trace_names</span> <span class="o">=</span> <span class="n">Tracer</span><span class="o">.</span><span class="n">INCLUDE_BELIEF_EVENTS</span>
+        <span class="k">elif</span> <span class="n">trace_type</span> <span class="o">==</span> <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">MONITOR_EVENT</span><span class="p">:</span>
+            <span class="n">trace_names</span> <span class="o">=</span> <span class="n">Tracer</span><span class="o">.</span><span class="n">INCLUDE_MONITOR_EVENTS</span>
+        <span class="k">elif</span> <span class="n">trace_type</span> <span class="o">==</span> <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">TASK_STEP_EVENT</span><span class="p">:</span>
+            <span class="n">trace_names</span> <span class="o">=</span> <span class="n">Tracer</span><span class="o">.</span><span class="n">INCLUDE_TASK_STEP_EVENTS</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unknown trace type: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">trace_type</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">Tracer</span><span class="o">.</span><span class="n">trace_types_idx</span><span class="p">[(</span><span class="n">trace_type</span><span class="p">,</span> <span class="n">n</span><span class="p">,)]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">trace_names</span><span class="p">]</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">num_events</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">full_trace</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">last_event</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_trace</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">trace</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trace</span><span class="p">[:,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">num_events</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Tracer.start"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.execution_tracer.Tracer.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_should_trace</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Tracer.stop"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.execution_tracer.Tracer.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_should_trace</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="Tracer.initialize_trace"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.execution_tracer.Tracer.initialize_trace">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_trace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_time</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the first trace event&quot;&quot;&quot;</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">ExecutionEvent</span><span class="p">(</span><span class="n">stamp</span><span class="o">=</span><span class="n">start_time</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">full_trace</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trace</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">start_time</span><span class="o">.</span><span class="n">to_time</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">trace_spec</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">Tracer</span><span class="o">.</span><span class="n">trace_types</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">trace_spec</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">MONITOR_EVENT</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_trace</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">MonitorMetadata</span><span class="o">.</span><span class="n">NOMINAL</span></div>
+
+<div class="viewcode-block" id="Tracer.exclude_from_trace"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.execution_tracer.Tracer.exclude_from_trace">[docs]</a>    <span class="k">def</span> <span class="nf">exclude_from_trace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check to see if the msg should be excluded from the trace&quot;&quot;&quot;</span>
+        <span class="c1"># We want to exclude if the tracer hasn&#39;t been started</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_trace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># We want to ignore ROSGRAPH events</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">ROSGRAPH_EVENT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># Make sure to exclude the subevents that we don&#39;t care about</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">Tracer</span><span class="o">.</span><span class="n">EXCLUDE_BELIEF_EVENTS</span> <span class="ow">and</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">BELIEF_EVENT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">Tracer</span><span class="o">.</span><span class="n">EXCLUDE_MONITOR_EVENTS</span> <span class="ow">and</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">MONITOR_EVENT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># Excluded task events are counted as unknowns</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">Tracer</span><span class="o">.</span><span class="n">INCLUDE_UNKNOWN_TASK_EVENTS</span> \
+                <span class="ow">and</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">Tracer</span><span class="o">.</span><span class="n">EXCLUDE_TASK_STEP_EVENTS</span> \
+                <span class="ow">and</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">TASK_STEP_EVENT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># Warn if there is an event that isn&#39;t a known trace type</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Tracer</span><span class="o">.</span><span class="n">trace_types</span><span class="p">:</span>
+            <span class="c1"># Check that this is not an unknown task we should in fact include</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+                <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">TASK_STEP_EVENT</span>
+                <span class="ow">and</span> <span class="n">Tracer</span><span class="o">.</span><span class="n">INCLUDE_UNKNOWN_TASK_EVENTS</span>
+            <span class="p">):</span>
+                <span class="n">rospy</span><span class="o">.</span><span class="n">logwarn</span><span class="p">(</span><span class="s2">&quot;Unknown event </span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span>
+                              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">get_event_name</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">)))</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># All is well, include in the trace</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="Tracer.update_trace"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.execution_tracer.Tracer.update_trace">[docs]</a>    <span class="k">def</span> <span class="nf">update_trace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;As messages come in, update the trace&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclude_from_trace</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
+            <span class="k">return</span>
+
+        <span class="c1"># If this is an unknown task and we need to keep track of unknown tasks,</span>
+        <span class="c1"># then modify the message and keep track of the event</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">TASK_STEP_EVENT</span> \
+                <span class="ow">and</span> <span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Tracer</span><span class="o">.</span><span class="n">trace_types</span> \
+                <span class="ow">and</span> <span class="n">Tracer</span><span class="o">.</span><span class="n">INCLUDE_UNKNOWN_TASK_EVENTS</span><span class="p">:</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">Tracer</span><span class="o">.</span><span class="n">UNKNOWN_TASK_NAME</span>
+
+        <span class="c1"># Append to the full trace</span>
+        <span class="n">num_events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_events</span>  <span class="c1"># Keep track of the old num_events</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">full_trace</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c1"># Copy over the previous time-step&#39;s trace. Also recycle if the trace</span>
+        <span class="c1"># is too long</span>
+        <span class="k">if</span> <span class="n">num_events</span> <span class="o">==</span> <span class="n">Tracer</span><span class="o">.</span><span class="n">MAX_TRACE_LENGTH</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_trace</span><span class="p">[:,</span> <span class="p">:</span><span class="n">Tracer</span><span class="o">.</span><span class="n">MAX_TRACE_LENGTH</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trace</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trace</span><span class="p">[:,</span> <span class="n">num_events</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trace</span><span class="p">[:,</span> <span class="n">num_events</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">current_evt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trace</span><span class="p">[:,</span> <span class="n">num_events</span><span class="p">]</span>
+        <span class="n">current_evt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">stamp</span><span class="o">.</span><span class="n">to_time</span><span class="p">()</span>
+
+        <span class="c1"># Update all the tasks that have completed</span>
+        <span class="k">for</span> <span class="n">task_spec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tasks_to_reset</span><span class="p">:</span>
+            <span class="n">current_evt</span><span class="p">[</span><span class="n">Tracer</span><span class="o">.</span><span class="n">trace_types_idx</span><span class="p">[</span><span class="n">task_spec</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks_to_reset</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="c1"># Update the task step according to the incoming data</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">BELIEF_EVENT</span><span class="p">:</span>
+            <span class="n">current_evt</span><span class="p">[</span><span class="n">Tracer</span><span class="o">.</span><span class="n">trace_types_idx</span><span class="p">[(</span><span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span><span class="p">,)]]</span> <span class="o">=</span> \
+                <span class="n">msg</span><span class="o">.</span><span class="n">belief_metadata</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">MONITOR_EVENT</span><span class="p">:</span>
+            <span class="n">current_evt</span><span class="p">[</span><span class="n">Tracer</span><span class="o">.</span><span class="n">trace_types_idx</span><span class="p">[(</span><span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span><span class="p">,)]]</span> <span class="o">=</span> \
+                <span class="n">msg</span><span class="o">.</span><span class="n">monitor_metadata</span><span class="o">.</span><span class="n">fault_status</span>
+        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">ExecutionEvent</span><span class="o">.</span><span class="n">TASK_STEP_EVENT</span><span class="p">:</span>
+            <span class="c1"># Add the task to the list of tasks completed during this iteration</span>
+            <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">task_step_metadata</span><span class="o">.</span><span class="n">status</span> <span class="ow">in</span> <span class="p">[</span><span class="n">GoalStatus</span><span class="o">.</span><span class="n">SUCCEEDED</span><span class="p">,</span> <span class="n">GoalStatus</span><span class="o">.</span><span class="n">ABORTED</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tasks_to_reset</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span><span class="p">,))</span>
+
+            <span class="c1"># Get the discretized status: -1, 0, 1</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">discretize_task_step_status</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">task_step_metadata</span><span class="o">.</span><span class="n">status</span><span class="p">)</span>
+            <span class="n">current_evt</span><span class="p">[</span><span class="n">Tracer</span><span class="o">.</span><span class="n">trace_types_idx</span><span class="p">[(</span><span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span><span class="p">,)]]</span> <span class="o">=</span> <span class="n">status</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Unrecognized event </span><span class="si">{}</span><span class="s2"> of type </span><span class="si">{}</span><span class="s2">&quot;</span>
+                            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span><span class="p">))</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, RAIL.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

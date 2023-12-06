@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>task_monitor.recovery_strategies &mdash; task_execution 0.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=c1dcd045"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            task_execution
+          </a>
+              <div class="version">
+                0.0.2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../task_executor.html">task_executor package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../task_monitor.html">task_monitor package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">task_execution</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">task_monitor.recovery_strategies</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for task_monitor.recovery_strategies</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># This file helps determine the recovery actions to take based on the request</span>
+<span class="c1"># for assistance that was sent in the event of a failure</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">division</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">rospy</span>
+
+<span class="kn">import</span> <span class="nn">base64</span>
+
+<span class="kn">from</span> <span class="nn">actionlib_msgs.msg</span> <span class="kn">import</span> <span class="n">GoalStatus</span>
+<span class="kn">from</span> <span class="nn">task_execution_msgs.msg</span> <span class="kn">import</span> <span class="p">(</span><span class="n">RequestAssistanceResult</span><span class="p">,</span> <span class="n">ExecuteGoal</span><span class="p">,</span>
+                                     <span class="n">BeliefKeys</span><span class="p">)</span>
+<span class="c1"># from manipulation_actions.msg import StoreObjectResult, InHandLocalizeResult</span>
+
+<span class="kn">from</span> <span class="nn">task_executor.actions</span> <span class="kn">import</span> <span class="n">get_default_actions</span>
+
+
+<span class="c1"># This class encapsulates the different strategies for recovering from different</span>
+<span class="c1"># error situations</span>
+
+<div class="viewcode-block" id="RecoveryStrategies"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.recovery_strategies.RecoveryStrategies">[docs]</a><span class="k">class</span> <span class="nc">RecoveryStrategies</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class is responsible for determining the recovery task to execute when</span>
+<span class="sd">    given the request for assistance goal and its corresponding context. The</span>
+<span class="sd">    primary workhorse of this class is :meth:`get_strategy` which takes in a</span>
+<span class="sd">    :class:`RequestAssistanceGoal`, and generates an :class:`ExecuteGoal`, a</span>
+<span class="sd">    :class:`RequestAssistanceResult`, and a ``context`` on how to proceed when</span>
+<span class="sd">    the recovery execution is complete.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Just get all the BeliefKeys</span>
+    <span class="n">BELIEF_KEYS</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">BeliefKeys</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">isupper</span><span class="p">()]</span>
+
+    <span class="c1"># Constant values that can dictate the behaviour of when to apply different</span>
+    <span class="c1"># recovery behaviours</span>
+    <span class="n">MAX_PENULTIMATE_TASK_ABORTS</span> <span class="o">=</span> <span class="mi">7</span>
+    <span class="n">MAX_PRIMARY_TASK_ABORTS</span> <span class="o">=</span> <span class="mi">50</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tasks_config</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks_config</span> <span class="o">=</span> <span class="n">tasks_config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_actions</span> <span class="o">=</span> <span class="n">get_default_actions</span><span class="p">()</span>
+
+<div class="viewcode-block" id="RecoveryStrategies.init"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.recovery_strategies.RecoveryStrategies.init">[docs]</a>    <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Initialize the connections of all the actions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_actions</span><span class="o">.</span><span class="n">init</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="RecoveryStrategies.get_strategy"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.recovery_strategies.RecoveryStrategies.get_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">get_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">assistance_goal</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given an assistance goal, generate an ExecuteGoal that can be used for</span>
+<span class="sd">        recovery and the corresponding manner of resumption. By default, we</span>
+<span class="sd">        return a ``None`` ExecuteGoal and a</span>
+<span class="sd">        :const:`RequestAssistanceResult.NONE`. The former implies that no goal</span>
+<span class="sd">        should be executed, the latter that the task should be aborted in the</span>
+<span class="sd">        event of a failure.</span>
+
+<span class="sd">        In addition to task specific recoveries that are defined in the various</span>
+<span class="sd">        ``if-elif-else`` conditions in this method, there are global recovery</span>
+<span class="sd">        behaviours that apply to prevent infinite loops, for example:</span>
+
+<span class="sd">            1. If the number of times the penultimate task in the hierarchy has \</span>
+<span class="sd">                failed is &gt; :const:`MAX_PENULTIMATE_TASK_ABORTS`, then the \</span>
+<span class="sd">                recovery is aborted</span>
+<span class="sd">            2. If the number of times the main task has aborted is &gt; \</span>
+<span class="sd">                :const:`MAX_PRIMARY_TASK_ABORTS`, then the recovery is aborted</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            assistance_goal (task_execution_msgs/RequestAssistanceGoal) :</span>
+<span class="sd">                The request for assistance. The context attribute is unpickled</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (tuple):</span>
+<span class="sd">                - execute_goal (``task_execution_msgs/ExecuteGoal``) a task \</span>
+<span class="sd">                    goal to execute if any. If ``None``, assume there is no \</span>
+<span class="sd">                    such goal</span>
+<span class="sd">                - resume_hint (``RequestAssistanceResult.resume_hint``) a \</span>
+<span class="sd">                    constant value indicating how execution should proceed</span>
+<span class="sd">                - resume_context (dict) more fine grained control of the \</span>
+<span class="sd">                    intended resume_hint</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">execute_goal</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">resume_hint</span> <span class="o">=</span> <span class="n">RequestAssistanceResult</span><span class="o">.</span><span class="n">RESUME_NONE</span>
+        <span class="n">resume_context</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;resume_hint&#39;</span><span class="p">:</span> <span class="n">resume_hint</span> <span class="p">}</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Looking for recovery strategy for </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">assistance_goal</span><span class="p">))</span>
+
+        <span class="c1"># If our actions are not initialized, then recovery should fail because</span>
+        <span class="c1"># this is an unknown scenario</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_actions</span><span class="o">.</span><span class="n">initialized</span><span class="p">:</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">logwarn</span><span class="p">(</span><span class="s2">&quot;Recovery: cannot execute because actions are not initialized&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">execute_goal</span><span class="p">,</span> <span class="n">resume_hint</span><span class="p">,</span> <span class="n">resume_context</span>
+
+        <span class="c1"># Get the task beliefs. We don&#39;t expect it to fail</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">beliefs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_actions</span><span class="o">.</span><span class="n">get_beliefs</span><span class="p">(</span><span class="n">belief_keys</span><span class="o">=</span><span class="n">RecoveryStrategies</span><span class="o">.</span><span class="n">BELIEF_KEYS</span><span class="p">)</span>
+
+        <span class="c1"># Get the number of times things have failed</span>
+        <span class="n">component_names</span><span class="p">,</span> <span class="n">num_aborts</span> <span class="o">=</span> <span class="n">RecoveryStrategies</span><span class="o">.</span><span class="n">get_number_of_component_aborts</span><span class="p">(</span><span class="n">assistance_goal</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+        
+        <span class="c1"># Then it&#39;s a giant lookup table. The first condition in the lookup</span>
+        <span class="c1"># table is for test tasks. Should NEVER be used during the main task</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">assistance_goal</span><span class="o">.</span><span class="n">component</span> <span class="o">==</span> <span class="s1">&#39;loop_body_test&#39;</span>
+            <span class="ow">or</span> <span class="n">assistance_goal</span><span class="o">.</span><span class="n">component</span> <span class="o">==</span> <span class="s1">&#39;reposition_recovery_test&#39;</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">assistance_goal</span><span class="o">.</span><span class="n">component</span> <span class="o">==</span> <span class="s1">&#39;loop_body_test&#39;</span><span class="p">:</span>
+                <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Recovery: simply continue&quot;</span><span class="p">)</span>
+                <span class="n">resume_hint</span> <span class="o">=</span> <span class="n">RequestAssistanceResult</span><span class="o">.</span><span class="n">RESUME_CONTINUE</span>
+                <span class="n">resume_context</span> <span class="o">=</span> <span class="n">RecoveryStrategies</span><span class="o">.</span><span class="n">create_continue_result_context</span><span class="p">(</span><span class="n">assistance_goal</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">assistance_goal</span><span class="o">.</span><span class="n">component</span> <span class="o">==</span> <span class="s1">&#39;reposition_recovery_test&#39;</span><span class="p">:</span>
+
+                <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Recovery: reposition the base&quot;</span><span class="p">)</span>
+                <span class="n">location</span> <span class="o">=</span> <span class="n">RecoveryStrategies</span><span class="o">.</span><span class="n">get_last_goal_location</span><span class="p">(</span><span class="n">beliefs</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="n">location</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;reposition back to an unknown goal location&quot;</span>
+                <span class="n">goal_params</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;origin_move_location&quot;</span><span class="p">:</span> <span class="s2">&quot;waypoints.origin_for_&quot;</span> <span class="o">+</span> <span class="n">location</span><span class="p">,</span>
+                    <span class="s2">&quot;move_location&quot;</span><span class="p">:</span> <span class="s2">&quot;waypoints.&quot;</span> <span class="o">+</span> <span class="n">location</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="n">execute_goal</span> <span class="o">=</span> <span class="n">ExecuteGoal</span><span class="p">(</span>
+                    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;reposition_recovery_task&quot;</span><span class="p">,</span>
+                    <span class="n">params</span><span class="o">=</span><span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">goal_params</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
+                <span class="p">)</span>
+        <span class="c1"># Recovery for navigation</span>
+        <span class="k">elif</span> <span class="n">assistance_goal</span><span class="o">.</span><span class="n">component</span> <span class="o">==</span> <span class="s1">&#39;move&#39;</span><span class="p">:</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Recovery: reposition, then retry move to goal pose&quot;</span><span class="p">)</span>
+            <span class="n">component_context</span> <span class="o">=</span> <span class="n">RecoveryStrategies</span><span class="o">.</span><span class="n">get_final_component_context</span><span class="p">(</span><span class="n">assistance_goal</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_actions</span><span class="o">.</span><span class="n">move_planar</span><span class="p">(</span><span class="n">angular_amount</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">10</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_actions</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">duration</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_actions</span><span class="o">.</span><span class="n">move_planar</span><span class="p">(</span><span class="n">angular_amount</span><span class="o">=-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">10</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_actions</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">duration</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_actions</span><span class="o">.</span><span class="n">move_planar</span><span class="p">(</span><span class="n">linear_amount</span><span class="o">=-</span><span class="mf">0.1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_actions</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">duration</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;component_context: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">component_context</span><span class="p">))</span>
+            <span class="n">semantic_location_goal</span> <span class="o">=</span> <span class="n">component_context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;semantic_location&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">semantic_location_goal</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">goal_params</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;origin_move_location&quot;</span><span class="p">:</span> <span class="s2">&quot;waypoints.origin_for_&quot;</span> <span class="o">+</span> <span class="n">semantic_location_goal</span><span class="p">,</span>
+                    <span class="s2">&quot;move_location&quot;</span><span class="p">:</span> <span class="s2">&quot;waypoints.&quot;</span> <span class="o">+</span> <span class="n">semantic_location_goal</span>
+                <span class="p">}</span>
+                <span class="n">execute_goal</span> <span class="o">=</span> <span class="n">ExecuteGoal</span><span class="p">(</span>
+                    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;reposition_recovery_task&quot;</span><span class="p">,</span>
+                    <span class="n">params</span><span class="o">=</span><span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">goal_params</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="n">resume_hint</span> <span class="o">=</span> <span class="n">RequestAssistanceResult</span><span class="o">.</span><span class="n">RESUME_CONTINUE</span>
+            <span class="n">resume_context</span> <span class="o">=</span> <span class="n">RecoveryStrategies</span><span class="o">.</span><span class="n">create_continue_result_context</span><span class="p">(</span><span class="n">assistance_goal</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+        
+        <span class="c1"># Return the recovery options</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Recovery:</span><span class="se">\n</span><span class="s2">goal: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">resume_hint: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">context: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">execute_goal</span> <span class="k">if</span> <span class="n">execute_goal</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">execute_goal</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">resume_hint</span><span class="p">,</span>
+            <span class="n">resume_context</span>
+        <span class="p">))</span>
+        <span class="k">return</span> <span class="n">execute_goal</span><span class="p">,</span> <span class="n">resume_hint</span><span class="p">,</span> <span class="n">resume_context</span></div>
+
+<div class="viewcode-block" id="RecoveryStrategies.get_final_component_context"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.recovery_strategies.RecoveryStrategies.get_final_component_context">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_final_component_context</span><span class="p">(</span><span class="n">goal_context</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the context of the last component in the context chain</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">goal_context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;context&#39;</span><span class="p">,</span> <span class="p">{}))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">RecoveryStrategies</span><span class="o">.</span><span class="n">get_final_component_context</span><span class="p">(</span><span class="n">goal_context</span><span class="p">[</span><span class="s1">&#39;context&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">goal_context</span></div>
+
+<div class="viewcode-block" id="RecoveryStrategies.get_number_of_component_aborts"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.recovery_strategies.RecoveryStrategies.get_number_of_component_aborts">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_number_of_component_aborts</span><span class="p">(</span><span class="n">goal_context</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given the hierarchy of tasks in the goal context, obtain a vector of the</span>
+<span class="sd">        number of failures in each part of the component of the hierarchy. The</span>
+<span class="sd">        first index maps to the highest level of the hierarcy and the last</span>
+<span class="sd">        index maps to the lowest level of the hierarchy.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            goal_context (dict) : the goal context</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (tuple):</span>
+<span class="sd">                - component_names (list) a list of component names from highest \</span>
+<span class="sd">                    in the task hierarchy to the lowest</span>
+<span class="sd">                - num_aborts (list) a list of the number of times each \</span>
+<span class="sd">                    component in component_names aborted</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">component_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">num_aborts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">sub_context</span> <span class="o">=</span> <span class="n">goal_context</span>
+
+        <span class="k">while</span> <span class="n">sub_context</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sub_context</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">component_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sub_context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;task&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">sub_context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;action&#39;</span><span class="p">))</span>
+            <span class="n">num_aborts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sub_context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;num_aborts&#39;</span><span class="p">))</span>
+            <span class="n">sub_context</span> <span class="o">=</span> <span class="n">sub_context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;context&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Return the lists</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">component_names</span><span class="p">,</span> <span class="n">num_aborts</span><span class="p">,)</span></div>
+
+<div class="viewcode-block" id="RecoveryStrategies.create_continue_result_context"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.recovery_strategies.RecoveryStrategies.create_continue_result_context">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">create_continue_result_context</span><span class="p">(</span><span class="n">goal_context</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given the context of a ``task_execution_msgs/RequestAssistanceGoal``</span>
+<span class="sd">        return a dictionary for a ``task_execution_msgs/RequestAssistanceResult``</span>
+<span class="sd">        context that indicates :const:`RequestAssistanceResult.RESUME_CONTINUE`</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            goal_context (dict) : the goal context</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            (dict) : the result context</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s1">&#39;task&#39;</span> <span class="ow">in</span> <span class="n">goal_context</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s1">&#39;task&#39;</span><span class="p">:</span> <span class="n">goal_context</span><span class="p">[</span><span class="s1">&#39;task&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;step_idx&#39;</span><span class="p">:</span> <span class="n">goal_context</span><span class="p">[</span><span class="s1">&#39;step_idx&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;resume_hint&#39;</span><span class="p">:</span> <span class="n">RequestAssistanceResult</span><span class="o">.</span><span class="n">RESUME_CONTINUE</span><span class="p">,</span>
+                <span class="s1">&#39;context&#39;</span><span class="p">:</span> <span class="n">RecoveryStrategies</span><span class="o">.</span><span class="n">create_continue_result_context</span><span class="p">(</span><span class="n">goal_context</span><span class="p">[</span><span class="s1">&#39;context&#39;</span><span class="p">]),</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{}</span></div>
+
+<div class="viewcode-block" id="RecoveryStrategies.set_task_hint_in_context"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.recovery_strategies.RecoveryStrategies.set_task_hint_in_context">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">set_task_hint_in_context</span><span class="p">(</span><span class="n">result_context</span><span class="p">,</span> <span class="n">task_name</span><span class="p">,</span> <span class="n">resume_hint</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a result context dictionary, mark the desired task name with the</span>
+<span class="sd">        desired resume hint</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            result_context (dict) : the result context, possibly created by</span>
+<span class="sd">                :meth:`create_continue_result_context`</span>
+<span class="sd">            task_name (str) : the name of the task</span>
+<span class="sd">            resume_hint (uint8) : A ``task_execution_msgs/RequestAssistanceResult`` \</span>
+<span class="sd">                resume_hint constant for the task&#39;s resume hint</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (dict) : a result context dictionary with the task set to the \</span>
+<span class="sd">                desired resume_hint. Note: we do not copy, so the incoming arg \</span>
+<span class="sd">                might also get affected</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError : if :data:`task_name` is not found in the context</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Error checking</span>
+        <span class="k">if</span> <span class="s1">&#39;task&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">result_context</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Expected a result context for tasks. Not found in </span><span class="si">{}</span><span class="s2">!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result_context</span><span class="p">))</span>
+
+        <span class="c1"># If this is not the task we want, then continue on to its context.</span>
+        <span class="c1"># Otherwise, mark this task as the one we want to update and return</span>
+        <span class="k">if</span> <span class="n">result_context</span><span class="p">[</span><span class="s1">&#39;task&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">task_name</span><span class="p">:</span>
+            <span class="n">result_context</span><span class="p">[</span><span class="s1">&#39;resume_hint&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resume_hint</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result_context</span><span class="p">[</span><span class="s1">&#39;context&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">RecoveryStrategies</span><span class="o">.</span><span class="n">set_task_hint_in_context</span><span class="p">(</span><span class="n">result_context</span><span class="p">[</span><span class="s1">&#39;context&#39;</span><span class="p">],</span> <span class="n">task_name</span><span class="p">,</span> <span class="n">resume_hint</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result_context</span></div>
+
+<div class="viewcode-block" id="RecoveryStrategies.check_contradictory_beliefs"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.recovery_strategies.RecoveryStrategies.check_contradictory_beliefs">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">check_contradictory_beliefs</span><span class="p">(</span><span class="n">beliefs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a set of beliefs, check if there is any contradiction.</span>
+<span class="sd">        Currently only checking the contradiction between task and robot belief about its current location.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            beliefs (dict) :</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (bool) : True if there is a contradiction, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">robot_beliefs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">task_beliefs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">belief_key</span> <span class="ow">in</span> <span class="n">beliefs</span><span class="p">:</span>
+            <span class="c1"># ToDo: lower() may not be necessary</span>
+            <span class="n">lower_belief_key</span> <span class="o">=</span> <span class="n">belief_key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s2">&quot;task_at_&quot;</span> <span class="ow">in</span> <span class="n">lower_belief_key</span><span class="p">:</span>
+                <span class="n">location</span> <span class="o">=</span> <span class="n">lower_belief_key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;task_at_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="n">task_beliefs</span><span class="p">[</span><span class="n">location</span><span class="p">]</span> <span class="o">=</span> <span class="n">beliefs</span><span class="p">[</span><span class="n">belief_key</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;robot_at_&quot;</span> <span class="ow">in</span> <span class="n">lower_belief_key</span><span class="p">:</span>
+                <span class="n">location</span> <span class="o">=</span> <span class="n">lower_belief_key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;robot_at_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="n">robot_beliefs</span><span class="p">[</span><span class="n">location</span><span class="p">]</span> <span class="o">=</span> <span class="n">beliefs</span><span class="p">[</span><span class="n">belief_key</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">location</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">robot_beliefs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">task_beliefs</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">robot_beliefs</span><span class="p">[</span><span class="n">location</span><span class="p">]</span> <span class="o">!=</span> <span class="n">task_beliefs</span><span class="p">[</span><span class="n">location</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="RecoveryStrategies.get_last_goal_location"><a class="viewcode-back" href="../../task_monitor.html#task_monitor.recovery_strategies.RecoveryStrategies.get_last_goal_location">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_last_goal_location</span><span class="p">(</span><span class="n">beliefs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a set of beliefs, check the last location that the task says the</span>
+<span class="sd">        robot was trying to get to.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">belief_key</span> <span class="ow">in</span> <span class="n">beliefs</span><span class="p">:</span>
+            <span class="c1"># ToDo: lower() may not be necessary</span>
+            <span class="n">lower_belief_key</span> <span class="o">=</span> <span class="n">belief_key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s2">&quot;task_at_&quot;</span> <span class="ow">in</span> <span class="n">lower_belief_key</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">beliefs</span><span class="p">[</span><span class="n">belief_key</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">location</span> <span class="o">=</span> <span class="n">lower_belief_key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;task_at_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">location</span>
+        <span class="k">return</span> <span class="kc">None</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, RAIL.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
