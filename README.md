@@ -35,6 +35,7 @@ At a high level, the flow of control is as follows:
 
 1. Tasks, defined as sequences of robot actions, are assigned to the `task_executor` node using an [`ExecuteActionGoal`](task_execution_msgs/action/Execute.action). The available tasks are generally defined at [`tasks.yaml`](task_executor/config/tasks.yaml)
 1. The `task_executor` calls various actions, services, etc. in the robot system to accomplish the task. As part of the execution, there are 2 sources of information that the executor can use to parameterize its actions or the control flow:
+[Link to the Task Executor README](task_executor/README.md)
     * The `database` node contains known locations and/or joint poses in the environment that can be used as inputs for actions. The entries in the `database` are generally available in [`data.yaml`](task_executor/config/data.yaml)
     * The `beliefs` node is designed to keep track of semantic aspects of the robot or world state through the progress of the task. Beliefs are continuous values between 0 and 1 that can be updated by any node in a non-Bayesian manner by publishing to `/execution_monitor/trace`. The beliefs that are tracked are defined at [`BeliefKeys.msg`](task_execution_msgs/msg/BeliefKeys.msg)
 1. If the task succeeds, or is preempted, the `task_executor` returns the corresponding status (`actionlib_msgs/GoalStatus`) and result
@@ -47,7 +48,7 @@ At a high level, the flow of control is as follows:
     * Since belief updates are also sent out the `/execution_monitor/trace`, the `execution_monitor` contains a log of how the beliefs might change over the course of the task
 
 
-## API Documentation
+## API Documentation [In progress]
 
 The API documentation of the packages in this folder is likely to go out of date very quickly as new functionality is developed. Therefore, we use `sphinx` to automatically generate documentation from docstrings in the source code.
 
